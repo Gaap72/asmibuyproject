@@ -1,12 +1,9 @@
-# Backend de plataforma y accesos
+# Backend del integrante 1
 
-Responsable: integrante 1. Lenguaje: TypeScript estricto con NestJS. Persistencia: PostgreSQL mediante TypeORM. Leer [AGENTS del módulo](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
+TypeScript + Express sobre Node.js. Dominio para reglas; aplicación para casos de uso; infraestructura para `pg` y SQL parametrizado; interfaz para controladores y DTO. PostgreSQL externo alojado en Supabase Free, con migraciones SQL del propietario. Usar el mismo cliente `pg` en toda la transacción, decimal.js y contratos de otros módulos. Probar integridad con PostgreSQL real cuando aplique.
 
-Separar `src/dominio/`, `aplicacion/`, `infraestructura/` e `interfaz/`, con pruebas en `test/`. Exportar el módulo NestJS y los contratos públicos de identidad, permisos, auditoría y eventos. El arranque y la conexión global se componen desde `app/backend/`.
+Aplicar [reglas locales](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
 
-- [ ] E1-03/E1-04: identidad, sesiones, un rol por cuenta, permisos y protección del último administrador.
-- [ ] E1-06: bitácora sin secretos y consistente con los cambios administrativos.
-- [ ] E1-10/E1-11: bandeja transaccional de eventos, destinatarios, preferencias, dispositivos y adaptadores de entrega.
-- [ ] E1-08: respaldo/restauración PostgreSQL con envíos externos deshabilitados durante pruebas.
+Entorno, aplicación web común, API, acceso con perfiles fijos, diseño compartido, despliegue y recuperación.
 
-Entregar DTO/OpenAPI; no exponer entidades ORM directamente. Verificar autorización en servidor para móvil y PC sin crear una API distinta por sistema operativo. Auditar cambios de permisos durante sesiones, duplicados, rollback y recepción de solicitudes desde clientes distintos. Seguir las auditorías por ID del plan.
+Esta carpeta contiene instrucciones; redactarlas no crea un paquete ejecutable. No crear otra app o API por integrante.

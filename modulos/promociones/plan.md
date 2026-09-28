@@ -1,126 +1,102 @@
-# Plan del integrante 3: descuentos y promociones
+# Plan del integrante 3
 
-Estado inicial: pendiente. Responsable personal: por asignar. Revisor principal: integrante 2; integrante 4 para el contrato de cobro.
+## Descuentos y promociones
 
-## Resultado a entregar
+Versión 2.1. Estado: pendiente. Responsable personal: por asignar. Revisor principal: integrante 2.
 
-El dueño podrá administrar descuentos y promociones desde la app móvil Android/iOS. Caja consumirá un único cálculo del servidor para seleccionar y aplicar correctamente porcentaje, monto fijo, 2×1, 3×1, 3×2 y otras relaciones NxM permitidas.
+Porcentaje y NxM por un mismo platillo, duración temporal o permanente y cálculo único en servidor.
 
-Leer [reglas locales](AGENTS.md), [reglas generales](../../AGENTS.md) y [matriz CA](../../docs/matriz-aceptacion.md). Usar la [plantilla](../../docs/auditorias/plantilla.md) por tarea. No desarrollar cobros ni inventario dentro de este módulo.
+Leer [spec](../../spec.md), [reglas generales](../../AGENTS.md), [reglas locales](AGENTS.md), [arquitectura](../../docs/arquitectura-tecnica.md) y [matriz](../../docs/matriz-aceptacion.md). Usar [frontend](frontend/README.md) y [backend](backend/README.md). P0 y P1 son obligatorios; ejecutar por dependencias.
 
-## Stack y separación de implementación
+| ID | Prioridad | Tarea | Dependencias |
+| --- | --- | --- | --- |
+| W3-01 | P0 | Definir el contrato económico | Sin prerrequisito; coordinar contratos |
+| W3-02 | P0 | Implementar administración de promociones | W1-02, W1-03, W2-02, W3-01 |
+| W3-03 | P0 | Implementar cálculo exacto | W1-02, W3-01 |
+| W3-04 | P1 | Crear formulario web de promociones | W3-02, W1-04 |
+| W3-05 | P0 | Integrar promociones con la venta | W3-02, W3-03, W4-01 |
+| W3-06 | P1 | Verificar promociones integradas | W3-04, W3-05, W4-03 |
 
-Frontend: **Dart + Flutter** en [frontend/](frontend/README.md), especialmente E3-06. Backend: **TypeScript + NestJS**, **PostgreSQL/TypeORM** y **decimal.js** en [backend/](backend/README.md). El motor de precios se ejecuta solo en servidor y se expone mediante contratos/DTO OpenAPI con importes decimales como cadenas.
+## W3-01 Definir el contrato económico
 
-Las nueve tareas originales entregan el MVP Android/iOS. E3-10 es una adaptación Windows posterior, sin copiar el motor de cálculo a Dart.
+Prioridad: P0. Estado: pendiente.
 
-## E3-01 — Definir modelo y contrato económico
+Dependencias: ninguna; coordinar los contratos iniciales en paralelo.
 
-Dependencias: lectura de la especificación; trabajar en paralelo con E1-01 y E2-01.
+Resultado: Entradas y resultados de descuentos acordados con ventas.
 
-- [ ] Definir promociones y participantes, restricciones de cada tipo, duración y estados administrativos.
-- [ ] Documentar la evaluación de partidas: identificador estable, precio original, cantidad, instante de servidor y candidatos elegibles.
-- [ ] Definir salida: subtotal, descuento total, total final, descuento y bonificaciones por partida y copia de promoción aplicada.
-- [ ] Expresar el contrato en OpenAPI/DTO y fijar precisión y redondeo de decimal.js, evitando conversiones intermedias a `number`.
-- [ ] Acordar con el integrante 4 cómo se detecta una cotización obsoleta y con el 2 cómo se obtiene el catálogo de participantes.
-- [ ] Cerrar `docs/auditorias/E3-01.md` con revisión del contrato, ejemplos y tipos monetarios.
+- [ ] Definir porcentaje y NxM aplicables a un solo platillo por promoción, sin mezclar productos.
+- [ ] Documentar elegibilidad, salida por partida, ahorro, total y copia histórica.
+- [ ] Coordinar tipos con W1-01, catálogo con W2-01 y consumo del resultado con W4-01.
+- [ ] Verificar estructura y comportamiento pertinente con evidencia real; documentar entornos no disponibles.
+- [ ] Completar `docs/auditorias/W3-01.md` desde la [plantilla](../../docs/auditorias/plantilla.md) y obtener revisión independiente antes de cerrar.
 
-## E3-02 — Implementar administración y vigencias
+## W3-02 Implementar administración de promociones
 
-Dependencias: E3-01 y E1-02; integrar permisos E1-04 y bitácora E1-06 antes de entregar administración operativa. Responsable de CA-12 y CA-13.
+Prioridad: P0. Estado: pendiente.
 
-- [ ] Crear migraciones y operaciones para crear, editar, activar, desactivar y retirar promociones.
-- [ ] Validar fechas temporales, permanencia sin vencimiento, campos del tipo y participantes existentes.
-- [ ] Calcular vigencia con hora del servidor y límites de inicio inclusivo y fin exclusivo, sin depender del reloj del teléfono.
-- [ ] Registrar autoría y cambios; conservar promociones retiradas para referencias históricas e impedir reactivarlas.
-- [ ] Verificar límites temporales y suspensión manual; cerrar `docs/auditorias/E3-02.md`. Completar luego CA-12 con la revalidación real de cobro.
+Dependencias: W1-02, W1-03, W2-02, W3-01.
 
-## E3-03 — Implementar porcentaje y monto fijo
+Resultado: API crea, edita, activa, desactiva y retira promociones.
 
-Dependencias: E3-01 y tipos monetarios de E1-01. Responsable de CA-14 y CA-15; colabora en CA-26.
+- [ ] Crear migración y API con un platillo participante, tipo y parámetros válidos.
+- [ ] Implementar temporal con inicio y fin y permanente sin vencimiento, usando hora de servidor.
+- [ ] Restringir escritura al administrador y conservar las promociones referenciadas por ventas.
+- [ ] Verificar estructura y comportamiento pertinente con evidencia real; documentar entornos no disponibles.
+- [ ] Completar `docs/auditorias/W3-02.md` desde la [plantilla](../../docs/auditorias/plantilla.md) y obtener revisión independiente antes de cerrar.
 
-- [ ] Calcular porcentaje sobre toda la venta o solo unidades de los platillos participantes.
-- [ ] Calcular monto fijo una vez por orden o por unidad elegible, según el alcance.
-- [ ] Limitar el ahorro a su base sin importes negativos; admitir 100 % válido y total cero.
-- [ ] Aplicar redondeo decimal definido y mantener separación entre subtotal original y descuento.
-- [ ] Comprobar $200 al 15 % = $170, límites de monto, varias unidades y 100 %; cerrar `docs/auditorias/E3-03.md`.
+## W3-03 Implementar cálculo exacto
 
-## E3-04 — Implementar promociones por cantidad
+Prioridad: P0. Estado: pendiente.
 
-Dependencias: E3-01. Responsable de CA-16, CA-17, CA-18 y CA-19.
+Dependencias: W1-02, W3-01.
 
-- [ ] Validar enteros `N > M >= 1` y formar grupos por platillo cuando no se permite combinar.
-- [ ] Implementar mezcla de participantes por precio descendente con desempate estable y sobrantes a precio normal.
-- [ ] Devolver las unidades bonificadas de cada partida sin reducir las cantidades entregadas.
-- [ ] Verificar 5×$100 en 2×1 = $300, 4×$100 en 3×1 = $200, 3×$100 en 3×2 = $200 y mezcla $100/$90/$80/$70/$60 = $240, variando el orden de captura.
-- [ ] Cerrar `docs/auditorias/E3-04.md`; la parte de consumo de CA-16 se comprueba con inventario y caja integrados.
+Resultado: Porcentaje y NxM producen importes conocidos y reproducibles.
 
-## E3-05 — Seleccionar la promoción y distribuir descuentos
+- [ ] Calcular con decimal.js desde cadenas, redondeo a dos decimales y total no negativo.
+- [ ] Implementar grupos completos y sobrantes NxM; nunca cambiar unidades entregadas.
+- [ ] Seleccionar una sola promoción por orden con mayor ahorro y desempatar por identificador; probar ejemplos independientes.
+- [ ] Verificar estructura y comportamiento pertinente con evidencia real; documentar entornos no disponibles.
+- [ ] Completar `docs/auditorias/W3-03.md` desde la [plantilla](../../docs/auditorias/plantilla.md) y obtener revisión independiente antes de cerrar.
 
-Dependencias: E3-02, E3-03 y E3-04. Responsable de CA-20 y CA-22.
+## W3-04 Crear formulario web de promociones
 
-- [ ] Evaluar todos los candidatos elegibles sobre precios originales y aplicar únicamente el mayor ahorro efectivo.
-- [ ] Resolver empates por identificador y excluir candidatos que no produzcan beneficio aplicable.
-- [ ] Distribuir descuentos generales proporcionalmente, asignar residuos por mayores restos y desempatar por partida.
-- [ ] Atribuir bonificaciones y descuentos específicos a sus partidas y garantizar sumas exactas sin superar los subtotales.
-- [ ] Verificar empates, mezcla de candidatos, importes pequeños y centavos residuales; cerrar `docs/auditorias/E3-05.md`.
+Prioridad: P1. Estado: pendiente.
 
-## E3-06 — Desarrollar administración móvil de promociones
+Dependencias: W3-02, W1-04.
 
-Dependencias: E3-02, catálogo de E2-02 y base de interfaz E1-07.
+Resultado: Administrador configura duración, porcentaje o N y M desde móvil.
 
-- [ ] Crear listado y formularios móviles con selección de tipo, valor, alcance y participantes.
-- [ ] Incluir opción Temporal/Permanente, fecha y hora cuando correspondan y controles de N, M y mezcla para cantidad.
-- [ ] Mostrar activa/desactivada/retirada y vigencia calculada; permitir las acciones autorizadas sin editar historial.
-- [ ] Verificar formularios táctiles, teclado, validaciones, carga, error de conexión y protección de acciones en Android e iOS.
-- [ ] Aplicar controles Cupertino, Roboto, Material Symbols Rounded y tokens; registrar capturas, contraste y texto ampliado en el seguimiento visual.
-- [ ] Cerrar `docs/auditorias/E3-06.md` con evidencias de ambas plataformas, sin presentar una vista web como la app terminada.
+- [ ] Crear lista y formulario con selector de platillo y Temporal/Permanente.
+- [ ] Mostrar fecha y zona horaria, estado efectivo y errores; ocultar campos que no aplican al tipo.
+- [ ] Comprobar guardar, suspender y retirar con API real y diseño común.
+- [ ] Verificar estructura y comportamiento pertinente con evidencia real; documentar entornos no disponibles.
+- [ ] Completar `docs/auditorias/W3-04.md` desde la [plantilla](../../docs/auditorias/plantilla.md) y obtener revisión independiente antes de cerrar.
 
-## E3-07 — Integrar evaluación y copia histórica con caja
+## W3-05 Integrar promociones con la venta
 
-Dependencias: E3-05 y contrato E4-01; coordinar implementación con E4-03, que consume esta entrega.
+Prioridad: P0. Estado: pendiente.
 
-- [ ] Exponer evaluación desde datos consistentes y definir su uso dentro de la transacción de confirmación, sin escribir órdenes ni movimientos.
-- [ ] Entregar versión o huella verificable de la cotización y parámetros necesarios para mostrar al cajero un cambio de importe.
-- [ ] Entregar nombre, tipo, reglas, bonificaciones y descuentos por partida que ventas guardará como copia histórica.
-- [ ] Verificar con el contrato consumidor el vencimiento o edición entre cotización y cobro; no confiar en el descuento enviado por el móvil.
-- [ ] Cerrar `docs/auditorias/E3-07.md` y apoyar E4-04/E4-07 para verificar vigencia e historial en una venta real.
+Dependencias: W3-02, W3-03, W4-01.
 
-## E3-08 — Auditar promociones integradas y cerrar el módulo
+Resultado: Cotización y confirmación usan las mismas reglas del servidor.
 
-Dependencias: E3-06, E3-07, E3-09, E1-11, E4-04 y E4-07. No esperar al cierre E4-10.
+- [ ] Entregar evaluación bajo datos consistentes y copia de reglas aplicadas.
+- [ ] Detectar cambios de vigencia, precio o promoción entre cotización y confirmación.
+- [ ] Integrar con ventas y comprobar que una promoción retirada no cambia su historial.
+- [ ] Verificar estructura y comportamiento pertinente con evidencia real; documentar entornos no disponibles.
+- [ ] Completar `docs/auditorias/W3-05.md` desde la [plantilla](../../docs/auditorias/plantilla.md) y obtener revisión independiente antes de cerrar.
 
-- [ ] Ejecutar los casos del motor mediante la app Android/iOS y comprobar que el servidor decide el resultado.
-- [ ] Verificar expiración, desactivación y cambios de reglas durante una orden abierta; exigir reconfirmación si cambia el importe.
-- [ ] Verificar consumo de todas las unidades en NxM y conservación de una venta al editar o retirar la promoción después.
-- [ ] Comprobar avisos internos y push de vigencia con la app cerrada, cambios de versión y permanentes sin falso vencimiento; colaborar en CA-35.
-- [ ] Completar los CA propios 12 a 20 y 22 con los colaboradores, documentar límites y entregar datos de prueba para recuperación.
-- [ ] Cerrar `docs/auditorias/E3-08.md` y entregar el contrato definitivo y evidencia reproducible.
+## W3-06 Verificar promociones integradas
 
-## E3-09 — Producir notificaciones de vigencia
+Prioridad: P1. Estado: pendiente.
 
-Dependencias: E3-02 y E1-10. Colabora en CA-34 y CA-35.
+Dependencias: W3-04, W3-05, W4-03.
 
-- [ ] Emitir eventos de inicio/fin, activación permanente y desactivación/retiro de una promoción vigente; no emitir por ediciones rutinarias sin transición.
-- [ ] Evaluar vigencias desde un proceso de servidor con intervalo inicial de un minuto, aunque la app no esté abierta; conservar precisión inmediata del cálculo de cobro.
-- [ ] Usar claves por promoción, versión y transición, reevaluar mensajes pendientes y descartar inicios obsoletos tras editar o terminar una promoción.
-- [ ] Usar bandeja transaccional y destinatarios con permiso de consultar promociones; no programar expiraciones para promociones permanentes.
-- [ ] Verificar reinicio del proceso, retraso, duplicados, rollback y cambios de fecha; cerrar `docs/auditorias/E3-09.md` y completar entrega real en E3-08.
+Resultado: Porcentaje y NxM funcionan en una venta real sin alterar el consumo.
 
-## E3-10 — Fase PC: administrar promociones desde Windows
-
-Dependencias: E1-12 y E3-08. Fase posterior al MVP; criterio PC-03.
-
-- [ ] Reutilizar formularios y repositorios Flutter con distribución adaptable, teclado, ratón y selección accesible de fechas/participantes.
-- [ ] Consumir el mismo backend NestJS para porcentaje, monto fijo, NxM y vigencias; no añadir un motor de precios de escritorio.
-- [ ] Contrastar respuestas para los mismos datos e instante desde cliente móvil y Windows, incluyendo centavos, sobrantes, mezcla y promociones permanentes.
-- [ ] Verificar edición, activación y retiro desde PC y lectura histórica inalterada, incluyendo avisos autorizados.
-- [ ] Cerrar `docs/auditorias/E3-10.md` con evidencia Windows y resultados exactos; entregar el módulo para E4-12.
-
-## Lista de cierre del MVP del integrante
-
-- [ ] Nueve tareas del MVP entregadas y auditadas; E3-09 precede a E3-08. E3-10 corresponde a la fase PC y no bloquea ese cierre.
-- [ ] Avisos de vigencia integrados sin depender del reloj o ejecución del teléfono.
-- [ ] Administración de promociones utilizable en Android e iOS.
-- [ ] Un motor de cálculo en servidor, sin acumulación ni duplicación en caja.
-- [ ] Vigencias, NxM, centavos e historial verificados con los módulos reales.
+- [ ] Comprobar ejemplos 15 %, 2x1 y 3x1, fin exacto y promoción permanente desactivada.
+- [ ] Verificar una promoción por orden, descuento por partida, total cero e historial.
+- [ ] Contrastar unidades entregadas con consumo de inventario y entregar evidencia reproducible.
+- [ ] Verificar estructura y comportamiento pertinente con evidencia real; documentar entornos no disponibles.
+- [ ] Completar `docs/auditorias/W3-06.md` desde la [plantilla](../../docs/auditorias/plantilla.md) y obtener revisión independiente antes de cerrar.

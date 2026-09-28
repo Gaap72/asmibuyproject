@@ -1,12 +1,9 @@
-# Frontend de promociones
+# Frontend del integrante 3
 
-Responsable: integrante 3. Lenguaje: Dart con Flutter. Leer [AGENTS](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
+TypeScript + Angular. Componentes Angular, rutas, formularios y estado en src/presentacion; acceso HTTP en src/datos. La aplicación común compone las rutas. Consumir DTO del servidor, sin recalcular precios definitivos ni permisos. Reutilizar componentes y estilos de compartido/frontend. Pruebas de interacción y navegador según el cambio.
 
-Mantener formularios, estado y navegación en `lib/src/presentacion/`, y DTO/repositorios de la API en `datos/`. Usar componentes Cupertino y tokens comunes. La app configura promociones y presenta resultados del servidor; no incorpora una copia del motor NxM.
+Aplicar [reglas locales](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
 
-- [ ] E3-06: administrar porcentaje, monto, cantidad, participantes y Temporal/Permanente.
-- [ ] E3-07: entregar a caja presentación de nombre, ahorro y bonificaciones del resultado económico.
-- [ ] E3-09: abrir avisos de vigencia desde el centro compartido sin depender de temporizadores del teléfono.
-- [ ] E3-10, fase PC: adaptar formularios y selección de participantes a ventana, teclado y ratón.
+Porcentaje y NxM por un mismo platillo, duración temporal o permanente y cálculo único en servidor.
 
-Conservar los decimales como datos exactos y la zona horaria acordada. No inferir vigencia final a partir del reloj del dispositivo ni alterar el descuento recibido. Auditar ambas plataformas móviles y después Windows, incluyendo fechas, texto ampliado y equivalencia de resultados para el mismo contrato.
+Esta carpeta contiene instrucciones; redactarlas no crea un paquete ejecutable. No crear otra app o API por integrante.

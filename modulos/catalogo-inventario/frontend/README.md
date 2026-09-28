@@ -1,12 +1,9 @@
-# Frontend de catálogo e inventario
+# Frontend del integrante 2
 
-Responsable: integrante 2. Lenguaje: Dart con Flutter. Leer [AGENTS del módulo](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
+TypeScript + Angular. Componentes Angular, rutas, formularios y estado en src/presentacion; acceso HTTP en src/datos. La aplicación común compone las rutas. Consumir DTO del servidor, sin recalcular precios definitivos ni permisos. Reutilizar componentes y estilos de compartido/frontend. Pruebas de interacción y navegador según el cambio.
 
-Implementar las pantallas y view models en `lib/src/presentacion/`; los servicios HTTP, DTO y repositorios cliente en `datos/`. Consumir el diseño y los adaptadores comunes por su API pública. Mantener las cantidades exactas recibidas, sin recalcular existencias autoritativas en el dispositivo.
+Aplicar [reglas locales](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
 
-- [ ] E2-06: catálogo y editor de recetas, unidades y validaciones comprensibles.
-- [ ] E2-07: existencias, movimientos, mínimos individuales y estados bajo/agotado.
-- [ ] E2-10: integrar los avisos del servicio común, sin otro motor push.
-- [ ] E2-11, fase PC: listas/detalle adaptables, teclado y ratón, conservando repositorios y contratos.
+Ingredientes, platillos, recetas, existencias, movimientos, consumo y alertas dentro de la web.
 
-No confundir una respuesta pendiente con un ajuste guardado. La validación local ayuda al formulario, pero el backend confirma cantidades, permisos y movimientos. Auditar teclado decimal, texto largo, contraste, tamaños de ventana y correspondencia de las cantidades con la API según el ID de tarea.
+Esta carpeta contiene instrucciones; redactarlas no crea un paquete ejecutable. No crear otra app o API por integrante.

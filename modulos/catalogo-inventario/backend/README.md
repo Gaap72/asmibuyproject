@@ -1,12 +1,9 @@
-# Backend de catálogo e inventario
+# Backend del integrante 2
 
-Responsable: integrante 2. Lenguaje: TypeScript estricto con NestJS. PostgreSQL/TypeORM para persistencia; decimal.js para cantidades exactas. Leer [AGENTS](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
+TypeScript + Express sobre Node.js. Dominio para reglas; aplicación para casos de uso; infraestructura para `pg` y SQL parametrizado; interfaz para controladores y DTO. PostgreSQL externo alojado en Supabase Free, con migraciones SQL del propietario. Usar el mismo cliente `pg` en toda la transacción, decimal.js y contratos de otros módulos. Probar integridad con PostgreSQL real cuando aplique.
 
-Separar reglas en `src/dominio/`, casos de uso en `aplicacion/`, persistencia y bloqueos en `infraestructura/`, y controladores/DTO en `interfaz/`. No crear otro servidor ni conexión global por módulo.
+Aplicar [reglas locales](../AGENTS.md), [plan](../plan.md) y [arquitectura](../../../docs/arquitectura-tecnica.md).
 
-- [ ] E2-02/E2-03: catálogo, recetas, restricciones, movimientos y compensaciones.
-- [ ] E2-04/E2-08: consumo y reintegro con el mismo contexto transaccional proporcionado por ventas.
-- [ ] E2-05/E2-10: condición individual de stock y eventos por transición, guardados junto con la operación.
-- [ ] E2-09 y posteriormente E2-11: comprobar que clientes móviles y Windows observan la misma fuente de datos.
+Ingredientes, platillos, recetas, existencias, movimientos, consumo y alertas dentro de la web.
 
-Usar `numeric` con escala explícita; no convertir cantidades por `number`. Bloquear ingredientes en orden estable y probar demanda compartida, concurrencia, reintegros históricos y rollback sobre PostgreSQL real. No usar repositorios fuera del `EntityManager` de la operación al consumir o reintegrar. Auditar cada tarea en su archivo previsto.
+Esta carpeta contiene instrucciones; redactarlas no crea un paquete ejecutable. No crear otra app o API por integrante.
