@@ -1,0 +1,148 @@
+<div class="promociones-contenedor" role="region" aria-label="Gestión de Descuentos y Promociones">
+  <header class="promociones-header">
+    <div class="header-titulo">
+      <h1>Promociones</h1>
+      <p class="subtitulo">Configuración de descuentos por porcentaje y promociones NxM</p>
+    </div>
+    <button
+      class="btn-primario"
+      (click)="abrirCrear()"
+      aria-label="Crear nueva promoción"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">add</span>
+      Nueva Promoción
+    </button>
+  </header>
+
+  <!-- Filtro por Estado -->
+  <nav class="filtros-bar" aria-label="Filtro de promociones">
+    <button
+      class="chip-filtro"
+      [class.activo]="filtroEstado === 'TODAS'"
+      (click)="filtroEstado = 'TODAS'"
+    >
+      Todas
+    </button>
+    <button
+      class="chip-filtro"
+      [class.activo]="filtroEstado === 'ACTIVA'"
+      (click)="filtroEstado = 'ACTIVA'"
+    >
+      Activas
+    </button>
+    <button
+      class="chip-filtro"
+      [class.activo]="filtroEstado === 'INACTIVA'"
+      (click)="filtroEstado = 'INACTIVA'"
+    >
+      Inactivas
+    </button>
+    <button
+      class="chip-filtro"
+      [class.activo]="filtroEstado === 'RETIRADA'"
+      (click)="filtroEstado = 'RETIRADA'"
+    >
+      Retiradas
+    </button>
+  </nav>
+
+  <!-- Indicador de carga o error -->
+  <div *ngIf="cargando" class="estado-mensaje" role="status">
+    <span class="material-symbols-rounded girar">sync</span>
+    <span>Cargando promociones...</span>
+  </div>
+
+  <div *ngIf="errorMensaje" class="banner-error" role="alert">
+    <span class="material-symbols-rounded">error</span>
+    <span>{{ errorMensaje }}</span>
+    <button class="btn-secundario" (click)="cargarPromociones()">Reintentar</button>
+  </div>
+
+  <!-- Lista de Tarjetas de Promoción -->
+  <div *ngIf="!cargando && promocionesFiltradas.length === 0" class="lista-vacia">
+    <span class="material-symbols-rounded">local_offer</span>
+    <p>No se encontraron promociones registradas en este estado.</p>
+  </div>
+
+  <div class="promociones-grid" *ngIf="!cargando && promocionesFiltradas.length > 0">
+    <article
+      *ngFor="let p of promocionesFiltradas"
+      class="tarjeta-promocion"
+      [class.inactiva]="p.estado === 'INACTIVA'"
+      [class.retirada]="p.estado === 'RETIRADA'"
+    >
+      <div class="tarjeta-header">
+        <span class="badge-tipo" [class.nxm]="p.tipo === 'NXM'">
+          {{ p.tipo === 'PORCENTAJE' ? 'PORCENTAJE' : 'NxM' }}
+        </span>
+        <span class="badge-estado" [attr.data-estado]="p.estado">
+          {{ p.estado }}
+        </span>
+      </div>
+
+      <h2 class="promocion-nombre">{{ p.nombre }}</h2>
+      <p class="platillo-nombre">
+        <span class="material-symbols-rounded">restaurant</span>
+        {{ p.platilloNombre || 'Platillo #' + p.platilloId }}
+      </p>
+
+      <div class="regla-detalle">
+        <span class="material-symbols-rounded">local_offer</span>
+        <strong>{{ obtenerTextoDetalleRegla(p) }}</strong>
+      </div>
+
+      <div class="vigencia-detalle">
+        <span class="material-symbols-rounded">schedule</span>
+        <span>{{ obtenerTextoVigencia(p) }}</span>
+      </div>
+
+      <footer class="tarjeta-acciones" *ngIf="p.estado !== 'RETIRADA'">
+        <button
+          class="btn-accion"
+          (click)="abrirEditar(p)"
+          title="Editar promoción"
+          aria-label="Editar promoción"
+        >
+          <span class="material-symbols-rounded">edit</span>
+          Editar
+        </button>
+
+        <button
+          *ngIf="p.estado === 'ACTIVA'"
+          class="btn-accion suspender"
+          (click)="cambiarEstado(p, 'INACTIVA')"
+          title="Suspender promoción"
+        >
+          <span class="material-symbols-rounded">pause_circle</span>
+          Suspender
+        </button>
+
+        <button
+          *ngIf="p.estado === 'INACTIVA'"
+          class="btn-accion activar"
+          (click)="cambiarEstado(p, 'ACTIVA')"
+          title="Reactivar promoción"
+        >
+          <span class="material-symbols-rounded">play_circle</span>
+          Activar
+        </button>
+
+        <button
+          class="btn-accion retirar"
+          (click)="cambiarEstado(p, 'RETIRADA')"
+          title="Retirar promoción definitivamente"
+        >
+          <span class="material-symbols-rounded">delete_forever</span>
+          Retirar
+        </button>
+      </footer>
+    </article>
+  </div>
+
+  <!-- Modal Formulario -->
+  <app-formulario-promocion
+    *ngIf="mostrarFormulario"
+    [promocion]="promocionSeleccionada"
+    (alCerrar)="cerrarFormulario($event)"
+  ></app-formulario-promocion>
+</div>

@@ -1,0 +1,210 @@
+<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2 id="modal-titulo">
+        {{ esEdicion ? 'Editar Promoción' : 'Nueva Promoción' }}
+      </h2>
+      <button
+        class="btn-cerrar"
+        (click)="cancelar()"
+        aria-label="Cerrar modal"
+      >
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </header>
+
+    <div *ngIf="errorMensaje" class="banner-error-modal" role="alert">
+      <span class="material-symbols-rounded">error</span>
+      <span>{{ errorMensaje }}</span>
+    </div>
+
+    <form (ngSubmit)="guardar()" class="formulario-body">
+      <!-- Nombre de la promoción -->
+      <div class="form-grupo">
+        <label for="input-nombre">Nombre de la Promoción *</label>
+        <input
+          id="input-nombre"
+          type="text"
+          class="input-control"
+          [(ngModel)]="nombre"
+          name="nombre"
+          placeholder="Ejemplo: 2x1 en Hamburguesas Clásicas"
+          required
+        />
+      </div>
+
+      <!-- Selector de Platillo Participante -->
+      <div class="form-grupo">
+        <label for="select-platillo">Platillo Participante *</label>
+        <select
+          id="select-platillo"
+          class="input-control"
+          [(ngModel)]="platilloId"
+          name="platilloId"
+          required
+        >
+          <option [ngValue]="null" disabled>-- Seleccione un platillo del catálogo --</option>
+          <option *ngFor="let p of platillosDisponibles" [value]="p.id">
+            {{ p.nombre }} (${{ p.precio }})
+          </option>
+        </select>
+        <span class="ayuda-texto">La promoción aplicará exclusivamente sobre este platillo (sin mezclar productos).</span>
+      </div>
+
+      <!-- Tipo de Promoción (PORCENTAJE o NXM) -->
+      <div class="form-grupo">
+        <label>Tipo de Regla *</label>
+        <div class="segmented-control" role="radiogroup">
+          <button
+            type="button"
+            class="segment-btn"
+            [class.activo]="tipo === 'PORCENTAJE'"
+            (click)="tipo = 'PORCENTAJE'"
+            role="radio"
+            [attr.aria-checked]="tipo === 'PORCENTAJE'"
+          >
+            Porcentaje (%)
+          </button>
+          <button
+            type="button"
+            class="segment-btn"
+            [class.activo]="tipo === 'NXM'"
+            (click)="tipo = 'NXM'"
+            role="radio"
+            [attr.aria-checked]="tipo === 'NXM'"
+          >
+            NxM (Mismo Platillo)
+          </button>
+        </div>
+      </div>
+
+      <!-- Campos Dinámicos para PORCENTAJE -->
+      <div class="form-grupo" *ngIf="tipo === 'PORCENTAJE'">
+        <label for="input-porcentaje">Porcentaje de Descuento (%) *</label>
+        <div class="input-sufijo-wrapper">
+          <input
+            id="input-porcentaje"
+            type="number"
+            step="0.01"
+            min="0.01"
+            max="100"
+            class="input-control"
+            [(ngModel)]="porcentaje"
+            name="porcentaje"
+            placeholder="15.00"
+            required
+          />
+          <span class="sufijo">%</span>
+        </div>
+        <span class="ayuda-texto">Ejemplo: 15.00 aplica un 15% de descuento. 100.00 permite total cero en la línea.</span>
+      </div>
+
+      <!-- Campos Dinámicos para NXM -->
+      <div class="form-row" *ngIf="tipo === 'NXM'">
+        <div class="form-grupo col">
+          <label for="input-n">Llevas (N) *</label>
+          <input
+            id="input-n"
+            type="number"
+            min="2"
+            step="1"
+            class="input-control"
+            [(ngModel)]="n"
+            name="n"
+            required
+          />
+        </div>
+        <div class="form-grupo col">
+          <label for="input-m">Pagas (M) *</label>
+          <input
+            id="input-m"
+            type="number"
+            min="1"
+            step="1"
+            class="input-control"
+            [(ngModel)]="m"
+            name="m"
+            required
+          />
+        </div>
+      </div>
+      <span class="ayuda-texto" *ngIf="tipo === 'NXM'">
+        Ejemplo: N=2, M=1 para 2x1; N=3, M=1 para 3x1.
+      </span>
+
+      <!-- Duración de la Promoción (TEMPORAL o PERMANENTE) -->
+      <div class="form-grupo">
+        <label>Duración de Vigencia *</label>
+        <div class="segmented-control" role="radiogroup">
+          <button
+            type="button"
+            class="segment-btn"
+            [class.activo]="duracion === 'PERMANENTE'"
+            (click)="duracion = 'PERMANENTE'"
+            role="radio"
+            [attr.aria-checked]="duracion === 'PERMANENTE'"
+          >
+            Permanente
+          </button>
+          <button
+            type="button"
+            class="segment-btn"
+            [class.activo]="duracion === 'TEMPORAL'"
+            (click)="duracion = 'TEMPORAL'"
+            role="radio"
+            [attr.aria-checked]="duracion === 'TEMPORAL'"
+          >
+            Temporal
+          </button>
+        </div>
+      </div>
+
+      <!-- Fechas para TEMPORAL -->
+      <div class="form-row" *ngIf="duracion === 'TEMPORAL'">
+        <div class="form-grupo col">
+          <label for="input-fecha-inicio">Fecha y Hora Inicio *</label>
+          <input
+            id="input-fecha-inicio"
+            type="datetime-local"
+            class="input-control"
+            [(ngModel)]="fechaInicio"
+            name="fechaInicio"
+            required
+          />
+          <span class="ayuda-texto">Inicio inclusivo (&ge; fecha)</span>
+        </div>
+        <div class="form-grupo col">
+          <label for="input-fecha-fin">Fecha y Hora Fin *</label>
+          <input
+            id="input-fecha-fin"
+            type="datetime-local"
+            class="input-control"
+            [(ngModel)]="fechaFin"
+            name="fechaFin"
+            required
+          />
+          <span class="ayuda-texto">Fin exclusivo (&lt; fecha)</span>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="btn-secundario"
+          (click)="cancelar()"
+          [disabled]="guardando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn-primario"
+          [disabled]="guardando"
+        >
+          <span *ngIf="!guardando">{{ esEdicion ? 'Guardar Cambios' : 'Crear Promoción' }}</span>
+          <span *ngIf="guardando">Guardando...</span>
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
