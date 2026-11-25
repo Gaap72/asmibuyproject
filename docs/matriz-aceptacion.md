@@ -1,26 +1,32 @@
 # Matriz de aceptación de la web móvil
 
-Todos los criterios están pendientes. Los IDs CW sustituyen a los CA anteriores y no heredan aprobaciones.
+**BORRADOR del 2026-11-25** (base `90a9131`; lo revisa el equipo). Los IDs CW sustituyen a los CA anteriores y no heredan aprobaciones.
 
-| Criterio | Verificación | Tarea principal | Estado |
-| --- | --- | --- | --- |
-| CW-01 | Una cuenta activa inicia y cierra sesión; una desactivada pierde acceso en la siguiente operación. | W1-03 | Pendiente |
-| CW-02 | Un trabajador no puede modificar catálogo, stock, mínimos o promociones ni anular ventas; el servidor rechaza también la solicitud directa. | W1-03 | Pendiente |
-| CW-03 | Crear una hamburguesa con pan, 150 g de carne y queso no consume inventario; una receta inválida no permite vender. | W2-02 | Pendiente |
-| CW-04 | Iniciales, entradas y ajustes conservan autor y motivo cuando corresponde; el saldo coincide con movimientos y nunca es negativo. | W2-03 | Pendiente |
-| CW-05 | Vender dos hamburguesas consume dos panes, 300 g de carne y dos quesos; incluye todas las unidades gratuitas. | W4-03 | Pendiente |
-| CW-06 | Una demanda conjunta insuficiente, un fallo intermedio o dos cajas compitiendo por stock no dejan escrituras parciales ni negativos. | W4-03 | Pendiente |
-| CW-07 | Doble envío, reintento y recarga tras respuesta perdida recuperan la misma venta; una clave con otro contenido se rechaza. | W4-03 | Pendiente |
-| CW-08 | Pan con mínimo 20 y carne con mínimo 2000 se evalúan por separado; igualdad activa bajo stock, cero muestra agotado y reposición superior resuelve. | W2-05 | Pendiente |
-| CW-09 | Avisos muestra una sola fila por ingrediente con su condición actual; volver a la pestaña o recargar consulta datos vigentes. | W2-05 | Pendiente |
-| CW-10 | Una temporal aplica desde inicio inclusivo hasta fin exclusivo; una permanente no vence y desactivar o retirar impide aplicaciones futuras. | W3-02 | Pendiente |
-| CW-11 | Una línea elegible de 200 con 15 % descuenta 30 y cobra 170; 100 % permite total cero sin evitar consumos. | W3-03 | Pendiente |
-| CW-12 | Cinco unidades de 100 en 2x1 cuestan 300; cuatro en 3x1 cuestan 200. Se entregan y consumen cinco y cuatro respectivamente. | W3-06 | Pendiente |
-| CW-13 | No se mezclan platillos ni acumulan promociones; gana el mayor ahorro con desempate estable y los importes de partidas suman el total. | W3-03 | Pendiente |
-| CW-14 | Cambiar precio, receta o promoción antes de confirmar obliga a revalidar y aceptar el nuevo resumen; no se cobra silenciosamente un importe distinto. | W4-03 | Pendiente |
-| CW-15 | Ventas conservan nombres, precios, descuentos y consumo originales aun después de cambios administrativos. | W4-04 | Pendiente |
-| CW-16 | Anulación total con motivo conserva original, no reintegra stock automáticamente y no se duplica; el historial la separa del total vigente. | W4-05 | Pendiente |
-| CW-17 | El flujo funciona desde 360 px sin desbordamiento horizontal; Chrome Android, Safari iPhone y Chrome/Edge PC tienen evidencia con versión registrada. | W4-06 | Pendiente |
-| CW-18 | Diseño común aplica Roboto, Material Symbols Rounded, paleta acordada, contraste, foco y texto ampliado; teclado y errores son accesibles. | W1-04 | Pendiente |
-| CW-19 | Con pérdida de conexión no se declara éxito ni se crea una segunda operación; al recuperar conexión se verifica la operación pendiente. | W4-06 | Pendiente |
-| CW-20 | Un respaldo se restaura en una base aislada y conserva cuentas, catálogo, stock, promociones y órdenes coherentes. | W1-06 | Pendiente |
+Escala: **Pendiente** (sin evidencia); **Parcial** (evidencia, pero no en todos los entornos exigidos; se indican los que faltan); **Verificado** (evidencia real en todos los entornos exigidos por `QA-INT-2026-10-19.md`); **Aprobado** (Verificado más decisión escrita de un revisor humano con nombre, fecha y decisión). Un texto del asistente, del orquestador o de Claude nunca cuenta como decisión humana.
+
+Entornos: **L** = PostgreSQL local desechable (no sustituye a S); **S** = Supabase; **PC** = Chrome/Edge en PC (Zen Browser no cuenta); **A** = Chrome en Android; **I** = Safari en iPhone; **M** = suite automática en memoria (no sustituye a L ni a S). «L (script)» = batería automática contra PostgreSQL local, sin navegador.
+
+Resumen: Pendiente 1 · Parcial 19 · Verificado 0 · Aprobado 0. Ningún «Decisión del revisor» de las evidencias tiene nombre, fecha y decisión.
+
+| Criterio | Verificación | Tarea principal | Estado | Evidencia | Entornos cubiertos | Entornos que faltan |
+| --- | --- | --- | --- | --- | --- | --- |
+| CW-01 | Una cuenta activa inicia y cierra sesión; una desactivada pierde acceso en la siguiente operación. | W1-03 | Parcial | QA-LOCAL (cierre manual L-PC en Zen: 401/403 sin distinguir); W1: accesos-w1 51/51 y auditoria3-w1 52/52 (memoria) | L, M | S, PC (Chrome/Edge), A |
+| CW-02 | Un trabajador no puede modificar catálogo, stock, mínimos o promociones ni anular ventas; el servidor rechaza también la solicitud directa. | W1-03 | Parcial | QA-LOCAL: 11/11 peticiones directas con 403 (L-PC, Zen); accesos-w1 (M). La UI sin Gestión no se confirmó | L, M | S, PC (Chrome/Edge); ocultación en UI |
+| CW-03 | Crear una hamburguesa con pan, 150 g de carne y queso no consume inventario; una receta inválida no permite vender. | W2-02 | Parcial | verificar-catalogo-w2-02 22/22 (M); QA-LOCAL: no ejecutado en navegador | M | L manual, S, PC |
+| CW-04 | Iniciales, entradas y ajustes conservan autor y motivo cuando corresponde; el saldo coincide con movimientos y nunca es negativo. | W2-03 | Parcial | verificar-inventario-w2-03 28/28 (M); QA-LOCAL: no ejecutado | M | L manual, S, PC |
+| CW-05 | Vender dos hamburguesas consume dos panes, 300 g de carne y dos quesos; incluye todas las unidades gratuitas. | W4-03 | Parcial | verificar-ventas-w4-03 36/36 (M); auditoria2-w4 47/47 (L automatizado) | M, L (script) | Prueba manual L, S, PC, A |
+| CW-06 | Una demanda conjunta insuficiente, un fallo intermedio o dos cajas compitiendo por stock no dejan escrituras parciales ni negativos. | W4-03 | Parcial | auditoria2-w4 47/47 y auditoria3-w4 18/18 con PostgreSQL local; W4-Auditoria-3 | L (script) | S con dos navegadores, PC |
+| CW-07 | Doble envío, reintento y recarga tras respuesta perdida recuperan la misma venta; una clave con otro contenido se rechaza. | W4-03 | Parcial | ventas-w4-03 36/36 (M); auditoria2-w4 47/47 (L script) | M, L (script) | S, PC, A; doble clic/recarga en navegador |
+| CW-08 | Pan con mínimo 20 y carne con mínimo 2000 se evalúan por separado; igualdad activa bajo stock, cero muestra agotado y reposición superior resuelve. | W2-05 | Parcial | verificar-minimos-avisos-w2-05 23/23 (M) | M | L manual, S, PC |
+| CW-09 | Avisos muestra una sola fila por ingrediente con su condición actual; volver a la pestaña o recargar consulta datos vigentes. | W2-05 | Parcial | ENT-DCU-01 (L-PC, Zen, 360 px y escritorio, ejecutor); minimos-avisos-w2-05 23/23 (M); cambio de pestaña no probado | L (Zen), M | S, PC (Chrome/Edge), A, I |
+| CW-10 | Una temporal aplica desde inicio inclusivo hasta fin exclusivo; una permanente no vence y desactivar o retirar impide aplicaciones futuras. | W3-02 | Parcial | verificar-promociones-w3-02 32/32 (M); auditoria3-w3 18/18 (L script) | M, L (script) | S, PC |
+| CW-11 | Una línea elegible de 200 con 15 % descuenta 30 y cobra 170; 100 % permite total cero sin evitar consumos. | W3-03 | Parcial | verificar-calculo-w3-03 36/36 (M) | M | L manual, S, PC |
+| CW-12 | Cinco unidades de 100 en 2x1 cuestan 300; cuatro en 3x1 cuestan 200. Se entregan y consumen cinco y cuatro respectivamente. | W3-06 | Parcial | verificar-promociones-integradas-w3-06 33/33 (M) | M | L manual, S, PC |
+| CW-13 | No se mezclan platillos ni acumulan promociones; gana el mayor ahorro con desempate estable y los importes de partidas suman el total. | W3-03 | Parcial | verificar-calculo-w3-03 36/36 y integracion-ventas-w3-05 19/19 (M) | M | L manual, S, PC |
+| CW-14 | Cambiar precio, receta o promoción antes de confirmar obliga a revalidar y aceptar el nuevo resumen; no se cobra silenciosamente un importe distinto. | W4-03 | Parcial | ventas-w4-03 36/36 (M); auditoria2-w4 47/47 (L script) | M, L (script) | S, PC |
+| CW-15 | Ventas conservan nombres, precios, descuentos y consumo originales aun después de cambios administrativos. | W4-04 | Parcial | verificar-historial-w4-04 15/15 (M); auditoria3-w4 18/18 (L script) | M, L (script) | S, PC |
+| CW-16 | Anulación total con motivo conserva original, no reintegra stock automáticamente y no se duplica; el historial la separa del total vigente. | W4-05 | Parcial | verificar-anulacion-w4-05 21/21 (M) | M | L manual, S, PC |
+| CW-17 | El flujo funciona desde 360 px sin desbordamiento horizontal; Chrome Android, Safari iPhone y Chrome/Edge PC tienen evidencia con versión registrada. | W4-06 | Parcial | ENT-A-ENT-04 (L, Zen a 360 px y escritorio; sin versión); UI-REV-02 (Edge de escritorio con emulación, ejecutor) | L (Zen), PC emulado | Chrome Android, Safari iPhone, Chrome/Edge real con versión |
+| CW-18 | Diseño común aplica Roboto, Material Symbols Rounded, paleta acordada, contraste, foco y texto ampliado; teclado y errores son accesibles. | W1-04 | Parcial | UI-REV-02: axe-core 0 violaciones en 28 unidades (Edge PC, ejecutor) | PC emulado | A, I; revisión humana |
+| CW-19 | Con pérdida de conexión no se declara éxito ni se crea una segunda operación; al recuperar conexión se verifica la operación pendiente. | W4-06 | Parcial | verificar-recorrido-venta-w4-06 28/28 (M); QA-INT cita Edge PC del ciclo 2 | M, PC (ciclo 2) | S, A; repetir en Chrome/Edge con versión |
+| CW-20 | Un respaldo se restaura en una base aislada y conserva cuentas, catálogo, stock, promociones y órdenes coherentes. | W1-06 | Pendiente | Sin restauración; depende de P1-B2 (pg_dump y base aislada) | — | S → L (todo) |
