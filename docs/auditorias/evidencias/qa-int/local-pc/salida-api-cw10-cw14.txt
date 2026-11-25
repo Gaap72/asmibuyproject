@@ -1,0 +1,33 @@
+promo QA CW-11 100% 100.00
+stock antes {"Carne":"20000.000","Pan":"200","Papa":"10000.000","Queso":"200","Refresco":"100"}
+stock despues {"Carne":"19850.000","Pan":"199","Papa":"10000.000","Queso":"199","Refresco":"100"}
+ultima orden {"folio":1,"total":"0.00","metodo":"SIN_COBRO","estado":"CONFIRMADA"}
+== CW-12 2x1
+5 hamburguesas 2x1: 200 total 300.00 metodo EFECTIVO | pan 199 -> 194 carne 19850.000 -> 19100.000
+== CW-12 3x1
+4 hamburguesas 3x1: 200 total 200.00 | pan 194 -> 190 queso 194 -> 190
+== CW-13 mayor ahorro (Papas fritas $45 x2: 10% ahorra 9.00, 2x1 ahorra 45.00)
+{"subtotal":"115.00","descuento":"45.00","total":"70.00","promo":"QA CW-13 2x1"} | partidas suman: 45.00 + 25.00
+== CW-13 empate (Refresco: dos promos de 20%, ids distintos)
+ids 6 7 -> {"subtotal":"25.00","descuento":"5.00","total":"20.00","promo":"QA CW-13 empate A"} id aplicado 6
+== CW-13 no acumula (Hamburguesa 15% + Refresco 20%: solo una en toda la orden)
+{"subtotal":"225.00","descuento":"30.00","total":"195.00","promo":"QA CW-11 15%"} | partidas: [{"p":"Hamburguesa","neto":"170.00","desc":"30.00"},{"p":"Refresco","neto":"25.00","desc":"0.00"}]
+temporal id 8 inicio 2026-11-25T07:22:58.000Z fin 2026-11-25T07:23:58.000Z
+2026-11-25T07:22:13.110Z ANTES del inicio (espera: sin descuento) {"subtotal":"25.00","descuento":"0.00","total":"25.00","promo":null}
+2026-11-25T07:22:59.597Z DENTRO de la vigencia (espera: 50%) {"subtotal":"25.00","descuento":"12.50","total":"12.50","promo":"QA CW-10 temporal"}
+2026-11-25T07:23:59.554Z DESPUES del fin (espera: sin descuento) {"subtotal":"25.00","descuento":"0.00","total":"25.00","promo":null}
+== permanente no vence / desactivar / retirar
+permanente fechaFin: null vigente: true
+2026-11-25T07:23:59.652Z permanente ACTIVA (espera 10%) {"subtotal":"25.00","descuento":"2.50","total":"22.50","promo":"QA CW-10 permanente"}
+2026-11-25T07:23:59.712Z permanente INACTIVA (espera: sin descuento) {"subtotal":"25.00","descuento":"0.00","total":"25.00","promo":null}
+2026-11-25T07:23:59.742Z reactivada (espera 10%) {"subtotal":"25.00","descuento":"2.50","total":"22.50","promo":"QA CW-10 permanente"}
+retirada estado: RETIRADA
+2026-11-25T07:23:59.780Z RETIRADA (espera: sin descuento) {"subtotal":"25.00","descuento":"0.00","total":"25.00","promo":null}
+editar retirada -> 409 PROMOCION_RETIRADA
+reactivar retirada -> 409 PROMOCION_RETIRADA
+cambiado a 25.00 % 2026-11-25T07:24:35.948Z
+ordenes antes de confirmar: 3
+ordenes tras el rechazo: 3 (antes 3)
+API confirmar con cotizacion vieja (total 150.00 ) -> 409 COTIZACION_DESACTUALIZADA nuevo total: 140.00
+TRABAJADOR crea promocion -> 403 ACCESO_DENEGADO
+TRABAJADOR lista promociones -> 200
