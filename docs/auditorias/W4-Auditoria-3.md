@@ -52,6 +52,7 @@ La batería ejecuta el migrador y crea fixtures con correos `@pruebas.invalid`; 
 - A3-4-01 a A3-4-04 están corregidos técnicamente; A3-4-05 (móviles físicos, Supabase y decisiones humanas) sigue abierto.
 - Autor y auditor de este ciclo son el mismo agente: la revisión del integrante 3 es indispensable. Se solicita además al integrante 1 que confirme el manejo de sesión (A3-4-03) y al integrante 2 que la propagación de errores no afecte a Avisos.
 - Solicitud de revisión: integrantes 3, 2 y 1, con fecha y decisión en este documento.
+- Decisión del revisor principal: Gaap72 (integrante 3) · 2026-11-25 · **aprobado**. Lista de comprobación en `ENT-W4-2026-11-24.md`. A3-4-05 (móviles físicos y Supabase) sigue abierto, y faltan las revisiones de los integrantes 2 y 1.
 
 ## Cierre
 
