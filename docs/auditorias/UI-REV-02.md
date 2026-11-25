@@ -53,7 +53,10 @@ Revisión solicitada al integrante 4 (revisor principal del integrante 1) y avis
 
 ## Decisión del revisor
 
-Revisor: · Fecha: · Decisión: · Observaciones:
+Revisor: Matos May Oscar Michel (integrante 4)
+Fecha: 2026-11-25
+Decisión: aprobado con observaciones
+Observaciones: 22/22 solo en Edge de escritorio, verificado por los mismos asistentes que corrigieron; complementado con una medición de 44 px en Chrome/Edge 158 sobre el PR #7. Pendientes: flujos con escritura, diálogos, comprobante y teléfonos (PM).
 
 ## Cierre
 
