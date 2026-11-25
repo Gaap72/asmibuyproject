@@ -2,7 +2,8 @@
 
 ## Base web y acceso
 
-Versión 2.1. Estado: completado. Responsable personal: Integrante 1. Revisor principal: integrante 4.
+Versión 2.1. Estado: en revisión. Responsable personal: Integrante 1. Revisor principal: integrante 4.
+Actualización 2026-11-25: estados devueltos a «en revisión» (A3-1-05); no consta decisión fechada del revisor humano. Ver docs/auditorias/ENT-C8-2026-11-25.md.
 
 Entorno, aplicación web común, API, acceso con perfiles fijos, diseño compartido, despliegue y recuperación.
 
@@ -19,7 +20,7 @@ Leer [spec](../../spec.md), [reglas generales](../../AGENTS.md), [reglas locales
 
 ## W1-01 Fijar entorno y contratos comunes
 
-Prioridad: P0. Estado: completado.
+Prioridad: P0. Estado: en revisión.
 
 Dependencias: ninguna; coordinar los contratos iniciales en paralelo.
 
@@ -33,7 +34,7 @@ Resultado: Versiones compatibles, moneda, zona horaria y convenciones acordadas.
 
 ## W1-02 Crear la base ejecutable
 
-Prioridad: P0. Estado: completado.
+Prioridad: P0. Estado: en revisión.
 
 Dependencias: W1-01.
 
@@ -47,7 +48,7 @@ Resultado: Web y API arrancan y consultan PostgreSQL desde una copia limpia.
 
 ## W1-03 Implementar acceso sencillo
 
-Prioridad: P0. Estado: completado.
+Prioridad: P0. Estado: en revisión.
 
 Dependencias: W1-02.
 
@@ -61,7 +62,7 @@ Resultado: Inicio y cierre de sesión con administrador y trabajador fijos.
 
 ## W1-04 Entregar navegación y diseño web
 
-Prioridad: P0. Estado: completado.
+Prioridad: P0. Estado: en revisión.
 
 Dependencias: W1-02.
 
@@ -75,7 +76,7 @@ Resultado: Componentes comunes utilizables desde móvil y navegador de PC.
 
 ## W1-05 Preparar instalación y verificación
 
-Prioridad: P1. Estado: completado.
+Prioridad: P1. Estado: en revisión.
 
 Dependencias: W1-03, W1-04.
 

@@ -22,6 +22,7 @@ Spec 2.1 con los cuatro módulos (plataforma y accesos, catálogo e inventario, 
 | DCU-02 (contraseña oculta) | `adccd10` | integrante 1 | en revisión |
 | QA-L-01, QA-L-02, QA-L-03 | `d8353e6` | integrante 1 | en revisión |
 | QA-L-04 (longitud al crear cuentas) | `90a9131` | integrante 1 | en revisión |
+| C8 (documental: estados devueltos a «en revisión», A3-1-05; ver `ENT-C8-2026-11-25.md`) | ver `git log` | integrantes 1 (W1, W2, plan), 2 (W3) y 3 (W4) | en revisión |
 
 ## d) Verificación realizada
 **Verificado (comando real)**, clon limpio de `90a9131`, sin `DATABASE_URL`:
@@ -47,7 +48,7 @@ Estado de los criterios CW en `docs/matriz-aceptacion.md`: Pendiente 1, Parcial 
 | QA visual en Chrome o Edge: CW-03 a CW-18, más QA-L-01 y QA-L-02 | integrantes por módulo | Medio |
 | PM: Chrome Android y Safari iPhone, CW-17 | integrantes 1 y 4 | Medio |
 | Repetir en S los CW validados solo en L | integrantes por módulo | Alto |
-| Decisiones humanas de todos los ID | revisores asignados | Alto: sin ellas nada pasa a Aprobado |
+| Decisiones humanas de todos los ID; las tareas W1-01 a W4-06 esperan decisión humana | revisores asignados | Alto: sin ellas nada pasa a Aprobado |
 | QA-L-04: `crearCuentaNominal` hashea sin recortar y `restablecerPassword` recortado; no se cambió para no invalidar cuentas | integrante 1 decide | Bajo |
 | El limitador de intentos guarda su estado en memoria: exige una sola instancia | integrante 1 | Medio |
 

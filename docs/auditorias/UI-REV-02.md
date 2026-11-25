@@ -53,8 +53,7 @@ Revisión solicitada al integrante 4 (revisor principal del integrante 1) y avis
 
 ## Decisión del revisor
 
-Revisor: <nombre> (integrante 4) · Fecha: <AAAA-MM-DD> · Decisión: <aprobado | aprobado con observaciones | rechazado>
-Observaciones: <texto>
+Revisor: · Fecha: · Decisión: · Observaciones:
 
 ## Cierre
 
