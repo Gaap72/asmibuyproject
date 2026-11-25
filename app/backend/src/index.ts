@@ -14,6 +14,25 @@ import { probarConexionBD } from './config/database';
 dotenv.config();
 
 const app = express();
+
+// Proxy de confianza (A-ENT-02): detrás de un proxy inverso req.ip toma X-Forwarded-For.
+// Sin TRUST_PROXY no se configura nada (local). Activarlo solo si existe un proxy real.
+const trustProxyEnv = (process.env.TRUST_PROXY || '').trim();
+if (trustProxyEnv) {
+  if (/^\d+$/.test(trustProxyEnv)) {
+    app.set('trust proxy', Number(trustProxyEnv));
+  } else if (trustProxyEnv.toLowerCase() === 'true') {
+    app.set('trust proxy', true);
+  } else if (trustProxyEnv.toLowerCase() === 'false') {
+    app.set('trust proxy', false);
+  } else {
+    app.set('trust proxy', trustProxyEnv);
+  }
+} else if (process.env.NODE_ENV === 'production') {
+  console.warn(
+    '[Seguridad] TRUST_PROXY no está definida en producción: el límite de intentos de login agrupará a todos los clientes bajo la IP del proxy.'
+  );
+}
 const PORT = process.env.PORT || 3001;
 
 // Cabeceras HTTP de seguridad básicas (A3-1-03)
