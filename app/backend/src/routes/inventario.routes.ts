@@ -105,6 +105,7 @@ inventarioRouter.get('/inventario/existencias', exigirAutenticacion, async (_req
  * 1. AGOTADO (existencia <= 0)
  * 2. BAJO_STOCK (existencia > 0 AND existencia <= minimo)
  * 3. NORMAL (existencia > minimo)
+ * Incluye `activo` para que la vista distinga los insumos dados de baja (QA-V-01).
  * Conforme al contrato docs/contratos/02-catalogo-inventario.md (Sección 3.2).
  */
 inventarioRouter.get('/inventario/avisos', exigirAutenticacion, async (_req: Request, res: Response) => {
@@ -119,7 +120,8 @@ inventarioRouter.get('/inventario/avisos', exigirAutenticacion, async (_req: Req
         unidad: ing.unidad,
         existencia: ing.existencia,
         minimo: ing.minimo,
-        estadoStock: ing.estadoStock
+        estadoStock: ing.estadoStock,
+        activo: ing.activo
       }))
       .sort((a, b) => ordenPrioridad[a.estadoStock] - ordenPrioridad[b.estadoStock] || a.nombre.localeCompare(b.nombre));
 

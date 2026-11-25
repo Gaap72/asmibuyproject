@@ -54,6 +54,8 @@ export interface AvisoStockDTO {
   existencia: string;
   minimo: string;
   estadoStock: EstadoStock;
+  /** false si el insumo está dado de baja (QA-V-01). */
+  activo: boolean;
 }
 
 export interface CrearIngredienteInput {
