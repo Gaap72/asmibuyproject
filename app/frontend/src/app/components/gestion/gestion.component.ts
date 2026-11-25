@@ -993,8 +993,8 @@ import { AuthService } from '../../services/auth.service';
       margin-left: 10px;
     }
     .btn-icon {
-      width: 40px;
-      height: 40px;
+      width: var(--touch-target-min);
+      height: var(--touch-target-min);
       border-radius: 10px;
       border: 1px solid var(--color-borde);
       background: #ffffff;
@@ -1012,7 +1012,7 @@ import { AuthService } from '../../services/auth.service';
       color: var(--token-rojo-alerta);
     }
     .btn-sm {
-      min-height: 36px;
+      min-height: var(--touch-target-min);
       padding: 6px 14px;
       font-size: 0.85rem;
     }
@@ -1062,6 +1062,12 @@ import { AuthService } from '../../services/auth.service';
       cursor: pointer;
       color: var(--color-texto-secundario);
       padding: 4px;
+      min-width: var(--touch-target-min);
+      min-height: var(--touch-target-min);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
     }
 
     /* Formularios */

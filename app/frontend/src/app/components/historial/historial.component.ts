@@ -350,7 +350,7 @@ import {
       color: var(--color-texto-secundario);
     }
     .btn-sm {
-      min-height: 38px;
+      min-height: var(--touch-target-min);
       padding: 6px 14px;
       font-size: 0.85rem;
       border-radius: 10px;
@@ -465,7 +465,7 @@ import {
       color: var(--color-texto);
     }
     .input-fecha {
-      min-height: 40px;
+      min-height: var(--touch-target-min);
       padding: 6px 10px;
       border-radius: 10px;
       border: 1px solid var(--color-borde);

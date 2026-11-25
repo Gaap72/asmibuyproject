@@ -450,7 +450,7 @@ export interface ItemCarrito {
       justify-content: flex-end;
     }
     .btn-sm {
-      min-height: 38px;
+      min-height: var(--touch-target-min);
       padding: 6px 14px;
       font-size: 0.85rem;
       border-radius: 10px;
@@ -596,6 +596,8 @@ export interface ItemCarrito {
       align-items: center;
       justify-content: center;
       padding: 4px;
+      min-width: var(--touch-target-min);
+      min-height: var(--touch-target-min);
     }
 
     .platillos-grid {
@@ -653,7 +655,7 @@ export interface ItemCarrito {
     }
     .btn-agregar {
       width: 100%;
-      min-height: 42px;
+      min-height: var(--touch-target-min);
       padding: 8px 14px;
       font-size: 0.9rem;
       border-radius: 10px;
@@ -695,7 +697,8 @@ export interface ItemCarrito {
       cursor: pointer;
       font-size: 0.85rem;
       font-weight: 500;
-      padding: 6px 8px;
+      padding: 6px 10px;
+      min-height: var(--touch-target-min);
       border-radius: 8px;
     }
     .btn-limpiar-carrito:hover {
@@ -761,8 +764,8 @@ export interface ItemCarrito {
       gap: 8px;
     }
     .btn-cantidad {
-      width: 38px;
-      height: 38px;
+      width: var(--touch-target-min);
+      height: var(--touch-target-min);
       border-radius: 10px;
       border: 1px solid var(--color-borde);
       background: #ffffff;
