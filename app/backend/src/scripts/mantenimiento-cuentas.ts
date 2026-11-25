@@ -1,14 +1,20 @@
 /**
  * UTILIDAD DE MANTENIMIENTO DE CUENTAS NOMINALES (SPEC v2.1)
  * Permite al administrador crear, listar o desactivar cuentas desde terminal sin pantalla pública de usuarios.
+ * La contraseña nunca se recibe como argumento: se pide de forma oculta (DCU-02).
  * Uso:
- *   node dist/scripts/mantenimiento-cuentas.js crear <nombre> <correo> <password> <ADMINISTRADOR|TRABAJADOR>
+ *   node dist/scripts/mantenimiento-cuentas.js crear <nombre> <correo> <ADMINISTRADOR|TRABAJADOR>
+ *   node dist/scripts/mantenimiento-cuentas.js password <id_usuario>
  *   node dist/scripts/mantenimiento-cuentas.js listar
  *   node dist/scripts/mantenimiento-cuentas.js desactivar <id>
  *   node dist/scripts/mantenimiento-cuentas.js activar <id>
  */
 import { AuthService } from '../services/auth.service';
 import { pool } from '../config/database';
+import { leerPasswordConfirmada } from './entrada-oculta';
+
+const AVISO_ARGUMENTO =
+  'Por seguridad la contraseña ya no se acepta como argumento; se pedirá de forma oculta. Borra esa línea de tu historial.';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -19,9 +25,13 @@ async function main() {
   console.log('========================================================\n');
 
   if (accion === 'crear') {
-    const [, nombre, correo, password, perfil] = args;
-    if (!nombre || !correo || !password || !perfil) {
-      console.log('Uso: node mantenimiento-cuentas.js crear <nombre> <correo> <password> <ADMINISTRADOR|TRABAJADOR>');
+    if (args.length > 4) {
+      console.log(AVISO_ARGUMENTO);
+      process.exit(1);
+    }
+    const [, nombre, correo, perfil] = args;
+    if (!nombre || !correo || !perfil) {
+      console.log('Uso: node mantenimiento-cuentas.js crear <nombre> <correo> <ADMINISTRADOR|TRABAJADOR>');
       process.exit(1);
     }
 
@@ -30,6 +40,7 @@ async function main() {
       process.exit(1);
     }
 
+    const password = await leerPasswordConfirmada();
     const u = await AuthService.crearCuentaNominal(nombre, correo, password, perfil);
     console.log(`✅ Cuenta nominal creada con éxito en la base de datos:`);
     console.log(`   - ID: ${u.id}`);
@@ -57,12 +68,17 @@ async function main() {
     const u = await AuthService.activarUsuario(id);
     console.log(`✅ Cuenta activada con éxito: ID ${u.id} (${u.nombre} - ${u.correo}) -> Activo: ${u.activo}`);
   } else if (accion === 'password' || accion === 'restablecer') {
-    const [, idStr, nuevoPassword] = args;
-    const id = parseInt(idStr, 10);
-    if (isNaN(id) || !nuevoPassword) {
-      console.log('Uso: node mantenimiento-cuentas.js password <id_usuario> <nueva_contraseña>');
+    if (args.length > 2) {
+      console.log(AVISO_ARGUMENTO);
       process.exit(1);
     }
+    const [, idStr] = args;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) {
+      console.log('Uso: node mantenimiento-cuentas.js password <id_usuario>');
+      process.exit(1);
+    }
+    const nuevoPassword = await leerPasswordConfirmada();
     const u = await AuthService.restablecerPassword(id, nuevoPassword);
     console.log(`✅ Contraseña restablecida con éxito para ID ${u.id} (${u.nombre} - ${u.correo}).`);
     console.log('   (Todas sus sesiones activas previas han sido revocadas para exigir re-autenticación).');
@@ -73,7 +89,7 @@ async function main() {
       const res = await pool.query('SELECT id, nombre, correo, perfil, activo, creado_en FROM usuarios ORDER BY id ASC');
       if (res.rows.length === 0) {
         console.log('ℹ️ No hay cuentas registradas en la base de datos.');
-        console.log('   Usa: node dist/scripts/mantenimiento-cuentas.js crear <nombre> <correo> <password> <ADMINISTRADOR|TRABAJADOR>');
+        console.log('   Usa: node dist/scripts/mantenimiento-cuentas.js crear <nombre> <correo> <ADMINISTRADOR|TRABAJADOR>');
       } else {
         console.log(`Listado de cuentas nominales registradas (${res.rows.length}):`);
         res.rows.forEach((u) => {
