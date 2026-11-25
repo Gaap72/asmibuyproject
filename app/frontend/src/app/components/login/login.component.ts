@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -228,6 +229,20 @@ import { AuthService } from '../../services/auth.service';
     .spin {
       animation: spin 1s linear infinite;
     }
+    /* QA-L-01: en 360×640 el error, los campos y el botón deben verse sin scroll */
+    @media (max-height: 700px) {
+      .login-page { align-items: flex-start; padding-top: 8px; padding-bottom: 8px; }
+      .login-card { padding: 14px 16px; }
+      .brand-header { margin-bottom: 10px; }
+      .icon-circle { width: 44px; height: 44px; border-radius: 14px; margin-bottom: 6px; }
+      .icon-circle .material-symbols-rounded { font-size: 26px; }
+      h1 { font-size: 1.3rem; margin-bottom: 2px; }
+      .subtitle { font-size: 0.8rem; }
+      .login-form { gap: 10px; }
+      .form-group { gap: 4px; }
+      .error-banner { padding: 8px 10px; font-size: 0.8rem; line-height: 1.25; }
+      .btn-full { margin-top: 2px; }
+    }
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
@@ -241,7 +256,11 @@ export class LoginComponent {
   // propiedades normales no repintan la pantalla dentro de callbacks HTTP (H-01).
   mostrarPassword = signal(false);
   cargando = signal(false);
-  errorMensaje = signal('');
+  errorMensaje = signal(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('motivo') === 'sesion-expirada'
+      ? 'Tu sesión terminó. Vuelve a iniciar sesión.'
+      : ''
+  );
 
   form: FormGroup = this.fb.group({
     correo: ['', [Validators.required, Validators.email]],

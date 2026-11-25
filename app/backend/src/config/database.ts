@@ -29,7 +29,7 @@ function obtenerConfiguracionSSL(): boolean | { rejectUnauthorized: boolean; ca?
   return sslConfig;
 }
 
-// Configuración de pool con límites de Supabase Free (5-10 conexiones máximo)
+// Configuración de pool con límites prudentes para proveedores gestionados (p. ej. Supabase Free: 5-10 conexiones)
 // Se fija explícitamente TimeZone=UTC en la conexión para garantizar consistencia absoluta
 // independiente de la zona horaria del host o del cliente (A3-1-02)
 export const pool = new Pool({
@@ -53,7 +53,22 @@ pool.on('error', (err) => {
 });
 
 /**
- * Verifica si la conexión con PostgreSQL / Supabase está activa
+ * Arma el detalle del health sin revelar el host. Distingue el entorno solo por el sufijo del host
+ * de DATABASE_URL (QA-L-03): «(Supabase)» si termina en supabase.com/.co; «(local)» en otro caso.
+ */
+export function construirDetalleConexion(url: string | undefined, horaServidor: unknown): string {
+  let host = '';
+  try {
+    host = new URL(url || '').hostname.toLowerCase();
+  } catch {
+    host = '';
+  }
+  const entorno = /(^|\.)supabase\.(com|co)$/.test(host) ? ' (Supabase)' : host ? ' (local)' : '';
+  return `Conectado a PostgreSQL${entorno}. Hora servidor: ${horaServidor}`;
+}
+
+/**
+ * Verifica si la conexión con PostgreSQL está activa
  */
 export async function probarConexionBD(): Promise<{ conectada: boolean; detalle: string }> {
   if (!connectionString) {
@@ -68,7 +83,7 @@ export async function probarConexionBD(): Promise<{ conectada: boolean; detalle:
     cliente.release();
     return {
       conectada: true,
-      detalle: `Conectado a PostgreSQL en Supabase. Hora servidor: ${res.rows[0].fecha_servidor}`
+      detalle: construirDetalleConexion(connectionString, res.rows[0].fecha_servidor)
     };
   } catch (error: any) {
     return {

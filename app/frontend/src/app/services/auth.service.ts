@@ -116,6 +116,14 @@ export class AuthService {
   }
 
   /**
+   * Limpia solo el estado en memoria (sesión terminada en el servidor, QA-L-02).
+   * No llama al servidor ni toca localStorage (la venta pendiente se conserva).
+   */
+  limpiarSesionLocal(): void {
+    this.usuarioActual.set(null);
+  }
+
+  /**
    * Cierra la sesión en el servidor y limpia el estado local
    */
   logout(): void {
