@@ -207,6 +207,15 @@ export class AuthService {
   }
 
   /**
+   * Regla común de longitud mínima de contraseña (QA-L-04).
+   */
+  private static validarLongitudPassword(p: string): void {
+    if (!p || p.trim().length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    }
+  }
+
+  /**
    * Utilidad de mantenimiento: Crear cuenta nominal directamente en la base de datos
    */
   static async crearCuentaNominal(
@@ -215,6 +224,7 @@ export class AuthService {
     passwordPlano: string,
     perfil: 'ADMINISTRADOR' | 'TRABAJADOR'
   ): Promise<Usuario> {
+    this.validarLongitudPassword(passwordPlano);
     const password_hash = this.hashPassword(passwordPlano);
     const correoNormalizado = correo.trim().toLowerCase();
 
@@ -346,9 +356,7 @@ export class AuthService {
    * y revoca todas sus sesiones activas para exigir re-autenticación.
    */
   static async restablecerPassword(id: number, nuevoPasswordPlano: string): Promise<Usuario> {
-    if (!nuevoPasswordPlano || nuevoPasswordPlano.trim().length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres.');
-    }
+    this.validarLongitudPassword(nuevoPasswordPlano);
     const password_hash = this.hashPassword(nuevoPasswordPlano.trim());
 
     if (process.env.DATABASE_URL) {
