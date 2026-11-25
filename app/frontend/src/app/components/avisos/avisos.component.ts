@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { EtiquetaEstadoPipe, CantidadPipe } from '../../pipes/formato-inventario.pipe';
 import { InventarioApiService, AvisoStockDTO } from '../../services/inventario.service';
 import { AuthService } from '../../services/auth.service';
@@ -7,7 +7,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-avisos',
   standalone: true,
-  imports: [CommonModule, EtiquetaEstadoPipe, CantidadPipe],
+  imports: [CommonModule, DatePipe, EtiquetaEstadoPipe, CantidadPipe],
   template: `
     <div class="app-container">
       <div class="view-header">
@@ -21,13 +21,32 @@ import { AuthService } from '../../services/auth.service';
         </button>
       </div>
 
+      <!-- Error de consulta (DCU-01) -->
+      <div *ngIf="errorConsulta() !== null" class="error-consulta" role="alert">
+        <span aria-hidden="true" class="material-symbols-rounded">error</span>
+        <div class="error-consulta-texto">
+          <strong>{{ errorConsulta() }}</strong>
+          <p *ngIf="avisos().length > 0 && ultimaActualizacion()">
+            Se muestran los datos de la última consulta correcta ({{ ultimaActualizacion() | date:'HH:mm' }}).
+          </p>
+        </div>
+        <button type="button" (click)="recargarAvisos()" class="btn-cupertino btn-secundario btn-sm" [disabled]="cargando()">
+          <span aria-hidden="true" class="material-symbols-rounded">refresh</span>
+          <span>Reintentar</span>
+        </button>
+      </div>
+
+      <p *ngIf="errorConsulta() === null && ultimaActualizacion()" class="actualizado">
+        Actualizado {{ ultimaActualizacion() | date:'HH:mm' }}
+      </p>
+
       <!-- Estado de carga -->
       <div *ngIf="cargando() && avisos().length === 0" class="loading-state">
         <p>Consultando condiciones de stock actual...</p>
       </div>
 
       <!-- Estado vacío -->
-      <div *ngIf="!cargando() && avisos().length === 0" class="empty-state card-cupertino">
+      <div *ngIf="!cargando() && !errorConsulta() && avisos().length === 0" class="empty-state card-cupertino">
         <span aria-hidden="true" class="material-symbols-rounded icon-grande">inventory</span>
         <p>No se encontraron insumos registrados en el inventario.</p>
       </div>
@@ -177,6 +196,33 @@ import { AuthService } from '../../services/auth.service';
       flex-shrink: 0;
     }
 
+    .error-consulta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--token-rojo-fondo);
+      color: var(--token-rojo-alerta);
+      border: 1px solid var(--token-rojo-borde);
+    }
+    .error-consulta-texto {
+      flex: 1 1 200px;
+      min-width: 0;
+    }
+    .error-consulta-texto p {
+      margin-top: 2px;
+      font-size: 0.82rem;
+      color: var(--color-texto);
+    }
+    .actualizado {
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+      color: var(--color-texto-secundario);
+    }
+
     .loading-state, .empty-state {
       text-align: center;
       padding: 32px 16px;
@@ -218,6 +264,8 @@ export class AvisosComponent implements OnInit, OnDestroy {
 
   avisos = signal<AvisoStockDTO[]>([]);
   cargando = signal<boolean>(false);
+  errorConsulta = signal<string | null>(null);
+  ultimaActualizacion = signal<Date | null>(null);
 
   private listenerVisibilidad: (() => void) | null = null;
   private listenerFoco: (() => void) | null = null;
@@ -249,14 +297,26 @@ export class AvisosComponent implements OnInit, OnDestroy {
   }
 
   recargarAvisos(): void {
+    // Evita consultas encimadas (recarga automática, foco y botón)
+    if (this.cargando()) return;
     this.cargando.set(true);
     this.api.obtenerAvisos().subscribe({
       next: (datos) => {
         this.avisos.set(datos);
+        this.errorConsulta.set(null);
+        this.ultimaActualizacion.set(new Date());
         this.cargando.set(false);
       },
       error: (err) => {
         console.error('Error al consultar avisos de inventario:', err);
+        // Se conservan los datos previos; la plantilla indica que son de la última consulta correcta
+        if (err?.status === 0) {
+          this.errorConsulta.set('No se pudo conectar con el servidor.');
+        } else if (err?.status === 401 || err?.status === 403) {
+          this.errorConsulta.set('Tu sesión no permite consultar los avisos.');
+        } else {
+          this.errorConsulta.set('No se pudieron consultar los avisos.');
+        }
         this.cargando.set(false);
       }
     });
