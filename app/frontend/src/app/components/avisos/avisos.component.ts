@@ -56,6 +56,7 @@ import { AuthService } from '../../services/auth.service';
         <div
           *ngFor="let aviso of avisos(); trackBy: trackPorId"
           class="card-cupertino aviso-item"
+          [class.aviso-inactivo]="aviso.activo === false"
           [class.borde-rojo]="aviso.estadoStock === 'AGOTADO'"
           [class.borde-amarillo]="aviso.estadoStock === 'BAJO_STOCK'"
           [class.borde-verde]="aviso.estadoStock === 'NORMAL'">
@@ -72,6 +73,13 @@ import { AuthService } from '../../services/auth.service';
 
           <div class="aviso-details">
             <h4>{{ aviso.nombre }}</h4>
+            <p *ngIf="aviso.activo === false" class="nota-inactivo">
+              <span class="badge badge-inactivo">
+                <span aria-hidden="true" class="material-symbols-rounded">block</span>
+                Inactivo
+              </span>
+              <span>Dado de baja: no se usa en recetas ni ventas.</span>
+            </p>
             <p class="stock-info">
               Existencia actual: <strong>{{ aviso.existencia | cantidad: aviso.unidad }}</strong>
               <span class="separador">|</span>
@@ -194,6 +202,32 @@ import { AuthService } from '../../services/auth.service';
     }
     .aviso-badge {
       flex-shrink: 0;
+    }
+    /* QA-V-01: insumo dado de baja, distinguido con texto y no solo con color */
+    .aviso-item.aviso-inactivo {
+      background: var(--color-fondo);
+    }
+    .nota-inactivo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0 4px;
+      font-size: 0.78rem;
+      color: var(--color-texto-secundario);
+    }
+    .badge-inactivo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      background: #FFFFFF;
+      color: var(--color-texto-secundario);
+      border: 1px solid #6B7280;
+    }
+    .badge-inactivo .material-symbols-rounded {
+      font-size: 14px;
     }
 
     .error-consulta {

@@ -160,7 +160,8 @@ export interface AvisoStockDTO {
     "unidad": "g",
     "existencia": "150.000",
     "minimo": "2000.000",
-    "estadoStock": "BAJO_STOCK"
+    "estadoStock": "BAJO_STOCK",
+    "activo": true
   },
   {
     "ingredienteId": 1,
@@ -168,10 +169,12 @@ export interface AvisoStockDTO {
     "unidad": "pieza",
     "existencia": "0",
     "minimo": "20",
-    "estadoStock": "AGOTADO"
+    "estadoStock": "AGOTADO",
+    "activo": true
   }
 ]
 ```
+* **Campo `activo` (QA-V-01):** se devuelve una fila por ingrediente, también de los dados de baja, con `activo: false`. La vista de Avisos los marca como «Inactivo» para que no se confundan con insumos en uso. Es un campo añadido; los consumidores existentes no cambian.
 
 ---
 
