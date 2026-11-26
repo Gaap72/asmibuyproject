@@ -67,16 +67,9 @@ export class AuthService {
    * Garantiza la disponibilidad de un token CSRF válido antes de mutaciones
    */
   asegurarCsrfToken(): Observable<string> {
-    const actual = this.csrfToken();
+    const actual = this.tokenCsrfVigente();
     if (actual) {
       return of(actual);
-    }
-    if (typeof document !== 'undefined') {
-      const match = document.cookie.match(/asmibuy_csrf=([^;]+)/);
-      if (match && match[1]) {
-        this.csrfToken.set(match[1]);
-        return of(match[1]);
-      }
     }
     return this.http.get<{ csrfToken: string }>(`${this.baseUrl}/csrf`, { withCredentials: true }).pipe(
       tap((res) => {
@@ -87,6 +80,22 @@ export class AuthService {
       map((res) => res?.csrfToken || ''),
       catchError(() => of(''))
     );
+  }
+
+  /**
+   * La cookie manda: otra pestaña pudo renovarla (QA-V-03). El signal solo se usa si no hay cookie.
+   */
+  private tokenCsrfVigente(): string {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/asmibuy_csrf=([^;]+)/);
+      if (match) {
+        if (match[1] !== this.csrfToken()) {
+          this.csrfToken.set(match[1]);
+        }
+        return match[1];
+      }
+    }
+    return this.csrfToken();
   }
 
   /**
@@ -127,14 +136,7 @@ export class AuthService {
    * Cierra la sesión en el servidor y limpia el estado local
    */
   logout(): void {
-    let token = this.csrfToken();
-    if (!token && typeof document !== 'undefined') {
-      const match = document.cookie.match(/asmibuy_csrf=([^;]+)/);
-      if (match) {
-        token = match[1];
-        this.csrfToken.set(token);
-      }
-    }
+    const token = this.tokenCsrfVigente();
 
     const headers: Record<string, string> = {};
     if (token) {

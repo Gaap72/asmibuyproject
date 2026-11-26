@@ -1,5 +1,6 @@
 import { Component, OnInit, DestroyRef, inject, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DialogoModalDirective } from '../../directives/dialogo-modal.directive';
@@ -1282,7 +1283,10 @@ export class VentaComponent implements OnInit {
       cantidad: i.cantidad
     }));
 
-    this.promocionesService.cotizarOrden(payload).subscribe({
+    // QA-V-03: refrescar el token desde la cookie antes de cotizar (otra pestaña pudo renovarlo)
+    this.authService.asegurarCsrfToken().pipe(
+      switchMap(() => this.promocionesService.cotizarOrden(payload))
+    ).subscribe({
       next: (resultado) => {
         if (this.operacionBloqueada()) { this.cotizando.set(false); return; }
         this.cotizacion.set(resultado);
@@ -1345,10 +1349,10 @@ export class VentaComponent implements OnInit {
     };
 
     if (!this.guardarVentaPendienteLocal(input)) return;
-    this.enviarConfirmacion(input);
+    this.enviarConfirmacion(input, true);
   }
 
-  private enviarConfirmacion(input: ConfirmarVentaInput): void {
+  private enviarConfirmacion(input: ConfirmarVentaInput, primerEnvio = false): void {
     const usuarioId = this.usuarioPendienteId;
     this.confirmando.set(true);
     this.ventasService.confirmarVenta(input).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -1372,6 +1376,15 @@ export class VentaComponent implements OnInit {
         this.confirmando.set(false);
 
         const codigo = err.error?.codigo;
+        // QA-V-03: el middleware CSRF rechaza antes de procesar. Solo es definitivo en el primer envío
+        // de esta misma operación; en un reintento, un envío anterior pudo haber creado la venta.
+        if (err.status === 403 && codigo === 'CSRF_INVALIDO' && primerEnvio
+            && this.esOperacionPendienteGuardada(input.claveIdempotencia)) {
+          this.borrarVentaPendienteLocal();
+          this.claveIdempotenciaActual = this.generarUUID();
+          this.mensajeAlerta.set('Tu sesión cambió en otra pestaña. Pulsa Confirmar de nuevo.');
+          return;
+        }
         // Solo rechazos de negocio que garantizan no haber confirmado son definitivos.
         const definitivos = ['STOCK_INSUFICIENTE', 'COTIZACION_DESACTUALIZADA',
           'DATOS_INVALIDOS', 'ORDEN_VACIA', 'METODO_PAGO_INVALIDO', 'DISCREPANCIA_CARRITO_COTIZACION'];
@@ -1544,6 +1557,16 @@ export class VentaComponent implements OnInit {
 
   puedeReintentarPendiente(): boolean {
     return !!this.solicitudPendiente;
+  }
+
+  /** El pendiente guardado es de esta operación y no de otra pestaña (QA-V-03) */
+  private esOperacionPendienteGuardada(clave: string): boolean {
+    try {
+      const guardado = localStorage.getItem(this.claveAlmacenamiento(this.usuarioPendienteId!));
+      return !!guardado && JSON.parse(guardado).claveIdempotencia === clave;
+    } catch {
+      return false;
+    }
   }
 
   private claveAlmacenamiento(usuarioId: number): string {
