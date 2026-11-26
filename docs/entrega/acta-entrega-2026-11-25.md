@@ -6,7 +6,7 @@ Etiquetas usadas: **reportado por el ejecutor** (texto de la evidencia, sin repe
 
 ## a) Versión
 - SHA de `main` **verificado en clon limpio** el 2026-11-25: `047f9d52747da4178e5388014ca60975e7b52277`.
-- URL del despliegue (reportado por el ejecutor, integrante 3, 2026-11-25; detalle en `W1-06.md`): web https://asmibuyproject-1.onrender.com y API https://asmibuyproject.onrender.com, las dos con `934444f`. Health OPERATIVO con Supabase. **Falta validar TLS** (`DB_SSL_CA`), además de cookies, login y CSRF (A6 a A8), migración 007 y restauración (P1-B1 y P1-B2).
+- URL del despliegue (reportado por el ejecutor, integrante 3, 2026-11-25; detalle en `W1-06.md`): web https://asmibuyproject-1.onrender.com y API https://asmibuyproject.onrender.com, las dos con `833a2c3` (incluye PR #11). Health OPERATIVO con Supabase y **TLS validado** (`DB_SSL_CA` + `DB_SSL_REJECT_UNAUTHORIZED=true`). Faltan cookies, login y CSRF (A6 a A8), migración 007 y restauración (P1-B1 y P1-B2).
 - **Defecto abierto en este SHA:** QA-V-09 (PR #11, sin fusionar), reportado por el ejecutor: al recargar cualquier pantalla la app lleva al login aunque la sesión siga activa. Ninguna suite de la sección d) lo detecta.
 
 ## b) Alcance entregado
