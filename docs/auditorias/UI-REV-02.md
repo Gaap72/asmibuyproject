@@ -58,6 +58,9 @@ Fecha: 2026-11-25
 Decisión: aprobado con observaciones
 Observaciones: 22/22 solo en Edge de escritorio, verificado por los mismos asistentes que corrigieron; complementado con una medición de 44 px en Chrome/Edge 158 sobre el PR #7. Pendientes: flujos con escritura, diálogos, comprobante y teléfonos (PM).
 
+## Decisión del revisor (Gestión, integrante 3)
+Revisor: Gaap72 (integrante 3) · Fecha: 2026-11-25 · Decisión: aprobado con observaciones · Revisa Gestión → Promociones. Entorno del revisor: `0e6cf78`, Windows 11, Chromium 156.0.8078.100 (navegador integrado de Claude Code, no Edge), API en 3001 y `ng serve` en 4200 sobre PostgreSQL local `asmibuy_test_rev3b` (7 migraciones; sin Supabase ni `app/backend/.env`), cuentas de prueba Admin y Trabajador creadas con `mantenimiento-cuentas.js`. A 360 × 780, los 13 controles visibles de la pestaña y los 21 del diálogo «Nueva Promoción» miden al menos 44 × 44 px y no hay desplazamiento horizontal; a 640 × 400 (zoom 200 %) ni la pestaña ni el diálogo se desbordan (el diálogo se desplaza en vertical). Se creó «QA 15%» desde el diálogo. Observaciones: (1) a 360 px los selectores «Tipo de Descuento» y «Duración» cortan el texto visible («Porcentaje (%», «Permanente (»); (2) H-03 ya no se cumple en `0e6cf78`: Hallazgo nuevo (sin ID, para el integrante 1): al recargar cualquier ruta con sesión, la app manda al login aunque `/auth/me` responde 200. `sesionExpiradaInterceptor` hace `inject(AuthService)` mientras `AuthService` aún se construye (su constructor llama a `verificarSesionInicial()`): Angular lanza `NG0200: Circular dependency detected for _AuthService`, el `catchError` lo toma como «sin sesión» y la petición no sale. Viene de `d8353e6` y está en `934444f`, el commit desplegado en Render.
+
 ## Cierre
 
 En revisión. No se fusiona a `main` sin la decisión registrada por el revisor humano.
