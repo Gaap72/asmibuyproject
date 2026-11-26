@@ -10,7 +10,8 @@ import { InventarioApiService, PlatilloDTO } from '../../services/inventario.ser
 import {
   PromocionesApiService,
   ResultadoCotizacionDTO,
-  ItemCotizacionInput
+  ItemCotizacionInput,
+  PartidaCotizacionDTO
 } from '../../services/promociones.service';
 import {
   VentasApiService,
@@ -22,6 +23,22 @@ import {
 export interface ItemCarrito {
   platillo: PlatilloDTO;
   cantidad: number;
+}
+
+/** Nombre y precio vigentes en cada línea, por id de platillo; conserva líneas y cantidades (QA-V-04) */
+export function actualizarLineasCarrito(carrito: ItemCarrito[], platillos: PlatilloDTO[]): ItemCarrito[] {
+  return carrito.map(item => {
+    const vigente = platillos.find(p => p.id === item.platillo.id);
+    return vigente
+      ? { ...item, platillo: { ...item.platillo, nombre: vigente.nombre, precio: vigente.precio } }
+      : item;
+  });
+}
+
+/** La cotización trae un nombre o precio distinto al que muestra alguna línea (QA-V-04) */
+export function hayLineasDesactualizadas(carrito: ItemCarrito[], partidas: PartidaCotizacionDTO[]): boolean {
+  return carrito.some(item => partidas.some(p => p.platilloId === item.platillo.id
+    && (p.nombrePlatillo !== item.platillo.nombre || Number(p.precioUnitario) !== Number(item.platillo.precio))));
 }
 
 @Component({
@@ -1193,6 +1210,7 @@ export class VentaComponent implements OnInit {
     this.inventarioService.listarPlatillosPublicos().subscribe({
       next: (platillos) => {
         this.platillos.set(platillos);
+        this.carrito.set(actualizarLineasCarrito(this.carrito(), platillos));
         this.cargandoCatalogo.set(false);
       },
       error: (err) => {
@@ -1294,6 +1312,7 @@ export class VentaComponent implements OnInit {
         if (this.operacionBloqueada()) { this.cotizando.set(false); return; }
         this.cotizacion.set(resultado);
         this.cotizando.set(false);
+        if (hayLineasDesactualizadas(this.carrito(), resultado.partidas)) this.cargarCatalogo();
 
         // Si el total es 0.00 (promoción 100%), fijar método a SIN_COBRO
         if (Number(resultado.total) === 0) {
@@ -1413,6 +1432,7 @@ export class VentaComponent implements OnInit {
           } else {
             this.recalcularCotizacion();
           }
+          this.cargarCatalogo(); // QA-V-04: tarjetas y líneas con los valores vigentes
         } else {
           this.mensajeError.set(err.error?.mensaje || 'Error al procesar la confirmación de la venta.');
         }

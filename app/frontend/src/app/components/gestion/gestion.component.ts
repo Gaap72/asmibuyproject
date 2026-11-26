@@ -19,6 +19,118 @@ import {
 } from '../../services/promociones.service';
 import { AuthService } from '../../services/auth.service';
 
+export interface ErrorCampo {
+  /** id del control en la plantilla */
+  campo: string;
+  mensaje: string;
+}
+
+// QA-V-07: las reglas, textos y orden del envío, indicando además el campo que falla.
+export function validarIngrediente(f: { nombre: string }): ErrorCampo[] {
+  return f.nombre.trim() ? [] : [{ campo: 'ing-nombre', mensaje: 'El nombre del insumo es obligatorio.' }];
+}
+
+export function validarPlatillo(f: {
+  nombre: string;
+  precio: string;
+  receta: Array<{ ingredienteId: number; cantidad: string | number }>;
+}): ErrorCampo[] {
+  const errores: ErrorCampo[] = [];
+  if (!f.nombre.trim()) {
+    errores.push({ campo: 'plat-nombre', mensaje: 'El nombre del platillo es obligatorio.' });
+  }
+  if (!f.precio || Number(f.precio) <= 0) {
+    errores.push({ campo: 'plat-precio', mensaje: 'El precio debe ser un importe positivo mayor a cero.' });
+  }
+  if (!f.receta.some((r) => r.ingredienteId > 0 && Number(r.cantidad) > 0)) {
+    const mensaje = 'Debes agregar al menos un insumo con cantidad válida en la receta.';
+    f.receta.forEach((r, i) => {
+      if (!(r.ingredienteId > 0)) errores.push({ campo: `receta-ing-${i}`, mensaje });
+      if (!(Number(r.cantidad) > 0)) errores.push({ campo: `receta-cant-${i}`, mensaje });
+    });
+    if (f.receta.length === 0) errores.push({ campo: 'receta-ing-0', mensaje });
+  }
+  return errores;
+}
+
+export function validarEntrada(f: { ingredienteId: number; cantidad: string }): ErrorCampo[] {
+  const errores: ErrorCampo[] = [];
+  if (!f.ingredienteId) {
+    errores.push({ campo: 'ent-ing', mensaje: 'Selecciona un insumo.' });
+  }
+  if (!f.cantidad || Number(f.cantidad) <= 0) {
+    errores.push({ campo: 'ent-cant', mensaje: 'La cantidad de entrada debe ser mayor a cero.' });
+  }
+  return errores;
+}
+
+export function validarAjuste(f: { ingredienteId: number; cantidad: string; motivo: string }): ErrorCampo[] {
+  const errores: ErrorCampo[] = [];
+  if (!f.ingredienteId) {
+    errores.push({ campo: 'aj-ing', mensaje: 'Selecciona un insumo.' });
+  }
+  if (!f.cantidad || Number(f.cantidad) === 0) {
+    errores.push({ campo: 'aj-cant', mensaje: 'La cantidad de ajuste no puede ser cero.' });
+  }
+  if (!f.motivo.trim()) {
+    errores.push({ campo: 'aj-mot', mensaje: 'El motivo justificado es obligatorio.' });
+  }
+  return errores;
+}
+
+export function validarPromocion(f: {
+  nombre: string;
+  platilloId: number;
+  tipo: TipoPromocion;
+  porcentaje: string;
+  n: number;
+  m: number;
+  duracion: DuracionPromocion;
+  fechaInicioLocal: string;
+  fechaFinLocal: string;
+}): ErrorCampo[] {
+  const errores: ErrorCampo[] = [];
+  if (!f.nombre.trim()) {
+    errores.push({ campo: 'promo-nombre', mensaje: 'El nombre de la promoción es obligatorio.' });
+  }
+  if (!f.platilloId || f.platilloId <= 0) {
+    errores.push({ campo: 'promo-platillo', mensaje: 'Debes seleccionar un platillo participante.' });
+  }
+
+  if (f.tipo === 'PORCENTAJE') {
+    const p = Number(f.porcentaje);
+    if (isNaN(p) || p <= 0 || p > 100) {
+      errores.push({ campo: 'promo-porcentaje', mensaje: 'El porcentaje debe ser un número entre 0.01 y 100.' });
+    }
+  } else {
+    const n = Number(f.n);
+    const m = Number(f.m);
+    if (!Number.isInteger(n) || !Number.isInteger(m) || m < 1 || n <= m) {
+      const mensaje = 'Para promociones NxM debe cumplirse que N y M sean enteros con N > M >= 1.';
+      const malN = !Number.isInteger(n) || n < 2;
+      const malM = !Number.isInteger(m) || m < 1;
+      // Si cada valor es válido por separado, falla la relación N > M: se marca N
+      if (malN || !malM) errores.push({ campo: 'promo-n', mensaje });
+      if (malM) errores.push({ campo: 'promo-m', mensaje });
+    }
+  }
+
+  if (f.duracion === 'TEMPORAL') {
+    if (!f.fechaInicioLocal || !f.fechaFinLocal) {
+      const mensaje = 'Las promociones temporales requieren fecha y hora de inicio y fin.';
+      if (!f.fechaInicioLocal) errores.push({ campo: 'promo-inicio', mensaje });
+      if (!f.fechaFinLocal) errores.push({ campo: 'promo-fin', mensaje });
+    } else {
+      const ini = new Date(f.fechaInicioLocal);
+      const fin = new Date(f.fechaFinLocal);
+      if (isNaN(ini.getTime()) || isNaN(fin.getTime()) || ini.getTime() >= fin.getTime()) {
+        errores.push({ campo: 'promo-fin', mensaje: 'La fecha de inicio debe ser anterior a la fecha de fin.' });
+      }
+    }
+  }
+  return errores;
+}
+
 @Component({
   selector: 'app-gestion',
   standalone: true,
@@ -351,7 +463,14 @@ import { AuthService } from '../../services/auth.service';
                 name="nombre"
                 required
                 placeholder="Ej. Pan de Hamburguesa"
-                class="input-cupertino" />
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('ing-nombre') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('ing-nombre') ? 'ing-nombre-error' : null"
+                (blur)="tocarCampo('ing-nombre')" />
+              <small *ngIf="errorDe('ing-nombre') as error" id="ing-nombre-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
             </div>
 
             <div class="form-group">
@@ -393,8 +512,8 @@ import { AuthService } from '../../services/auth.service';
             </div>
 
             <div class="modal-acciones">
-              <button type="button" class="btn-cupertino btn-secundario" (click)="cerrarModales()">Cancelar</button>
-              <button type="submit" class="btn-cupertino btn-verde" [disabled]="guardando()">
+              <button type="button" class="btn-cupertino btn-secundario" (mousedown)="$event.preventDefault()" (click)="cerrarModales()">Cancelar</button>
+              <button type="submit" class="btn-cupertino btn-verde" (mousedown)="$event.preventDefault()" [disabled]="guardando()">
                 {{ guardando() ? 'Guardando...' : 'Guardar Insumo' }}
               </button>
             </div>
@@ -426,7 +545,14 @@ import { AuthService } from '../../services/auth.service';
                   name="platNombre"
                   required
                   placeholder="Ej. Hamburguesa Clásica"
-                  class="input-cupertino" />
+                  class="input-cupertino"
+                  [attr.aria-invalid]="errorDe('plat-nombre') ? 'true' : null"
+                  [attr.aria-describedby]="errorDe('plat-nombre') ? 'plat-nombre-error' : null"
+                  (blur)="tocarCampo('plat-nombre')" />
+                <small *ngIf="errorDe('plat-nombre') as error" id="plat-nombre-error" class="campo-error">
+                  <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                  <span>{{ error }}</span>
+                </small>
               </div>
               <div class="form-group">
                 <label for="plat-precio">Precio de Venta (\$) *</label>
@@ -439,7 +565,14 @@ import { AuthService } from '../../services/auth.service';
                   name="platPrecio"
                   required
                   placeholder="120.00"
-                  class="input-cupertino" />
+                  class="input-cupertino"
+                  [attr.aria-invalid]="errorDe('plat-precio') ? 'true' : null"
+                  [attr.aria-describedby]="errorDe('plat-precio') ? 'plat-precio-error' : null"
+                  (blur)="tocarCampo('plat-precio')" />
+                <small *ngIf="errorDe('plat-precio') as error" id="plat-precio-error" class="campo-error">
+                  <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                  <span>{{ error }}</span>
+                </small>
               </div>
             </div>
 
@@ -460,9 +593,14 @@ import { AuthService } from '../../services/auth.service';
                 </button>
               </div>
 
-              <div *ngFor="let item of formPlatillo.receta; let i = index" class="receta-fila">
+              <div *ngFor="let item of formPlatillo.receta; let i = index">
+              <div class="receta-fila">
                 <div class="col-ing">
-                  <select [(ngModel)]="item.ingredienteId" name="recetaIng_{{i}}" required class="input-cupertino">
+                  <select [(ngModel)]="item.ingredienteId" name="recetaIng_{{i}}" required class="input-cupertino"
+                    id="receta-ing-{{i}}"
+                    [attr.aria-invalid]="errorDe('receta-ing-' + i) ? 'true' : null"
+                    [attr.aria-describedby]="errorDe('receta-ing-' + i) ? 'receta-' + i + '-error' : null"
+                    (blur)="tocarCampo('receta-ing-' + i)">
                     <option [ngValue]="0" disabled>Selecciona insumo...</option>
                     <option *ngFor="let ing of ingredientesActivos()" [ngValue]="ing.id">
                       {{ ing.nombre }} ({{ ing.unidad }})
@@ -478,19 +616,28 @@ import { AuthService } from '../../services/auth.service';
                     name="recetaCant_{{i}}"
                     required
                     placeholder="Cantidad"
-                    class="input-cupertino" />
+                    class="input-cupertino"
+                    id="receta-cant-{{i}}"
+                    [attr.aria-invalid]="errorDe('receta-cant-' + i) ? 'true' : null"
+                    [attr.aria-describedby]="errorDe('receta-cant-' + i) ? 'receta-' + i + '-error' : null"
+                    (blur)="tocarCampo('receta-cant-' + i)" />
                 </div>
                 <div class="col-btn">
-                  <button type="button" class="btn-icon btn-peligro" (click)="removerFilaReceta(i)" title="Quitar ingrediente" [attr.aria-label]="'Quitar ingrediente ' + (i + 1) + ' de la receta'">
+                  <button type="button" class="btn-icon btn-peligro" (mousedown)="$event.preventDefault()" (click)="removerFilaReceta(i)" title="Quitar ingrediente" [attr.aria-label]="'Quitar ingrediente ' + (i + 1) + ' de la receta'">
                     <span aria-hidden="true" class="material-symbols-rounded">delete</span>
                   </button>
                 </div>
               </div>
+              <small *ngIf="errorDe('receta-ing-' + i) || errorDe('receta-cant-' + i)" id="receta-{{i}}-error" class="campo-error campo-error-fila">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ errorDe('receta-ing-' + i) || errorDe('receta-cant-' + i) }}</span>
+              </small>
+              </div>
             </div>
 
             <div class="modal-acciones">
-              <button type="button" class="btn-cupertino btn-secundario" (click)="cerrarModales()">Cancelar</button>
-              <button type="submit" class="btn-cupertino btn-verde" [disabled]="guardando()">
+              <button type="button" class="btn-cupertino btn-secundario" (mousedown)="$event.preventDefault()" (click)="cerrarModales()">Cancelar</button>
+              <button type="submit" class="btn-cupertino btn-verde" (mousedown)="$event.preventDefault()" [disabled]="guardando()">
                 {{ guardando() ? 'Guardando...' : 'Guardar Platillo' }}
               </button>
             </div>
@@ -514,12 +661,19 @@ import { AuthService } from '../../services/auth.service';
           <form (ngSubmit)="guardarEntrada()">
             <div class="form-group">
               <label for="ent-ing">Insumo Recibido *</label>
-              <select id="ent-ing" [(ngModel)]="formEntrada.ingredienteId" name="entIng" required class="input-cupertino">
+              <select id="ent-ing" [(ngModel)]="formEntrada.ingredienteId" name="entIng" required class="input-cupertino"
+                [attr.aria-invalid]="errorDe('ent-ing') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('ent-ing') ? 'ent-ing-error' : null"
+                (blur)="tocarCampo('ent-ing')">
                 <option [ngValue]="0" disabled>Selecciona insumo...</option>
                 <option *ngFor="let ing of ingredientesActivos()" [ngValue]="ing.id">
                   {{ ing.nombre }} (Existencia actual: {{ ing.existencia | cantidad: ing.unidad }})
                 </option>
               </select>
+              <small *ngIf="errorDe('ent-ing') as error" id="ent-ing-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
             </div>
             <div class="form-group">
               <label for="ent-cant">Cantidad a Ingresar *</label>
@@ -531,7 +685,14 @@ import { AuthService } from '../../services/auth.service';
                 [(ngModel)]="formEntrada.cantidad"
                 name="entCant"
                 required
-                class="input-cupertino" />
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('ent-cant') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('ent-cant') ? 'ent-cant-error' : null"
+                (blur)="tocarCampo('ent-cant')" />
+              <small *ngIf="errorDe('ent-cant') as error" id="ent-cant-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
             </div>
             <div class="form-group">
               <label for="ent-mot">Motivo o Referencia (Opcional)</label>
@@ -544,8 +705,8 @@ import { AuthService } from '../../services/auth.service';
                 class="input-cupertino" />
             </div>
             <div class="modal-acciones">
-              <button type="button" class="btn-cupertino btn-secundario" (click)="cerrarModales()">Cancelar</button>
-              <button type="submit" class="btn-cupertino btn-verde" [disabled]="guardando()">
+              <button type="button" class="btn-cupertino btn-secundario" (mousedown)="$event.preventDefault()" (click)="cerrarModales()">Cancelar</button>
+              <button type="submit" class="btn-cupertino btn-verde" (mousedown)="$event.preventDefault()" [disabled]="guardando()">
                 {{ guardando() ? 'Registrando...' : 'Registrar Entrada' }}
               </button>
             </div>
@@ -569,12 +730,19 @@ import { AuthService } from '../../services/auth.service';
           <form (ngSubmit)="guardarAjuste()">
             <div class="form-group">
               <label for="aj-ing">Insumo a Ajustar *</label>
-              <select id="aj-ing" [(ngModel)]="formAjuste.ingredienteId" name="ajIng" required class="input-cupertino">
+              <select id="aj-ing" [(ngModel)]="formAjuste.ingredienteId" name="ajIng" required class="input-cupertino"
+                [attr.aria-invalid]="errorDe('aj-ing') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('aj-ing') ? 'aj-ing-error' : null"
+                (blur)="tocarCampo('aj-ing')">
                 <option [ngValue]="0" disabled>Selecciona insumo...</option>
                 <option *ngFor="let ing of ingredientesActivos()" [ngValue]="ing.id">
                   {{ ing.nombre }} (Existencia actual: {{ ing.existencia | cantidad: ing.unidad }})
                 </option>
               </select>
+              <small *ngIf="errorDe('aj-ing') as error" id="aj-ing-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
             </div>
             <div class="form-group">
               <label for="aj-cant">Cantidad (+ para sobrante, - para merma/desperdicio) *</label>
@@ -586,7 +754,14 @@ import { AuthService } from '../../services/auth.service';
                 name="ajCant"
                 required
                 placeholder="-5.000 o 2"
-                class="input-cupertino" />
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('aj-cant') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('aj-cant') ? 'aj-cant-error' : null"
+                (blur)="tocarCampo('aj-cant')" />
+              <small *ngIf="errorDe('aj-cant') as error" id="aj-cant-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
               <small class="input-hint">El stock nunca puede resultar negativo (Criterio CW-04).</small>
             </div>
             <div class="form-group">
@@ -598,11 +773,18 @@ import { AuthService } from '../../services/auth.service';
                 name="ajMot"
                 required
                 placeholder="Ej. Merma por cocción / Caducidad / Conteo físico"
-                class="input-cupertino" />
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('aj-mot') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('aj-mot') ? 'aj-mot-error' : null"
+                (blur)="tocarCampo('aj-mot')" />
+              <small *ngIf="errorDe('aj-mot') as error" id="aj-mot-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
             </div>
             <div class="modal-acciones">
-              <button type="button" class="btn-cupertino btn-secundario" (click)="cerrarModales()">Cancelar</button>
-              <button type="submit" class="btn-cupertino btn-amarillo" [disabled]="guardando()">
+              <button type="button" class="btn-cupertino btn-secundario" (mousedown)="$event.preventDefault()" (click)="cerrarModales()">Cancelar</button>
+              <button type="submit" class="btn-cupertino btn-amarillo" (mousedown)="$event.preventDefault()" [disabled]="guardando()">
                 {{ guardando() ? 'Registrando...' : 'Aplicar Ajuste' }}
               </button>
             </div>
@@ -634,7 +816,14 @@ import { AuthService } from '../../services/auth.service';
                 name="promoNombre"
                 required
                 placeholder="Ej. Martes 2x1 Clásica"
-                class="input-cupertino" />
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('promo-nombre') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('promo-nombre') ? 'promo-nombre-error' : null"
+                (blur)="tocarCampo('promo-nombre')" />
+              <small *ngIf="errorDe('promo-nombre') as error" id="promo-nombre-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
             </div>
 
             <div class="form-group">
@@ -644,12 +833,19 @@ import { AuthService } from '../../services/auth.service';
                 [(ngModel)]="formPromocion.platilloId"
                 name="promoPlatillo"
                 required
-                class="input-cupertino">
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('promo-platillo') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('promo-platillo') ? 'promo-platillo-error' : null"
+                (blur)="tocarCampo('promo-platillo')">
                 <option [ngValue]="0" disabled>Selecciona un platillo...</option>
                 <option *ngFor="let p of platillosActivos()" [ngValue]="p.id">
                   {{ p.nombre }} ($ {{ p.precio }})
                 </option>
               </select>
+              <small *ngIf="errorDe('promo-platillo') as error" id="promo-platillo-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
               <small class="campo-ayuda">Por regla del contrato W3-01, una promoción aplica únicamente a un platillo.</small>
             </div>
 
@@ -693,7 +889,14 @@ import { AuthService } from '../../services/auth.service';
                 [(ngModel)]="formPromocion.porcentaje"
                 name="promoPorcentaje"
                 placeholder="Ej. 15"
-                class="input-cupertino" />
+                class="input-cupertino"
+                [attr.aria-invalid]="errorDe('promo-porcentaje') ? 'true' : null"
+                [attr.aria-describedby]="errorDe('promo-porcentaje') ? 'promo-porcentaje-error' : null"
+                (blur)="tocarCampo('promo-porcentaje')" />
+              <small *ngIf="errorDe('promo-porcentaje') as error" id="promo-porcentaje-error" class="campo-error">
+                <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                <span>{{ error }}</span>
+              </small>
               <small class="campo-ayuda">Calculado sobre la línea del platillo. 100% permite total cero.</small>
             </div>
 
@@ -709,7 +912,14 @@ import { AuthService } from '../../services/auth.service';
                   [(ngModel)]="formPromocion.n"
                   name="promoN"
                   placeholder="Ej. 2 (en 2x1)"
-                  class="input-cupertino" />
+                  class="input-cupertino"
+                  [attr.aria-invalid]="errorDe('promo-n') ? 'true' : null"
+                  [attr.aria-describedby]="errorDe('promo-n') ? 'promo-n-error' : null"
+                  (blur)="tocarCampo('promo-n')" />
+                <small *ngIf="errorDe('promo-n') as error" id="promo-n-error" class="campo-error">
+                  <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                  <span>{{ error }}</span>
+                </small>
               </div>
 
               <div class="form-group">
@@ -722,7 +932,14 @@ import { AuthService } from '../../services/auth.service';
                   [(ngModel)]="formPromocion.m"
                   name="promoM"
                   placeholder="Ej. 1 (en 2x1)"
-                  class="input-cupertino" />
+                  class="input-cupertino"
+                  [attr.aria-invalid]="errorDe('promo-m') ? 'true' : null"
+                  [attr.aria-describedby]="errorDe('promo-m') ? 'promo-m-error' : null"
+                  (blur)="tocarCampo('promo-m')" />
+                <small *ngIf="errorDe('promo-m') as error" id="promo-m-error" class="campo-error">
+                  <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                  <span>{{ error }}</span>
+                </small>
               </div>
             </div>
             <small *ngIf="formPromocion.tipo === 'NXM'" class="campo-ayuda">
@@ -738,7 +955,14 @@ import { AuthService } from '../../services/auth.service';
                   type="datetime-local"
                   [(ngModel)]="formPromocion.fechaInicioLocal"
                   name="promoInicio"
-                  class="input-cupertino" />
+                  class="input-cupertino"
+                  [attr.aria-invalid]="errorDe('promo-inicio') ? 'true' : null"
+                  [attr.aria-describedby]="errorDe('promo-inicio') ? 'promo-inicio-error' : null"
+                  (blur)="tocarCampo('promo-inicio')" />
+                <small *ngIf="errorDe('promo-inicio') as error" id="promo-inicio-error" class="campo-error">
+                  <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                  <span>{{ error }}</span>
+                </small>
                 <small class="campo-ayuda">Inicio inclusivo</small>
               </div>
 
@@ -749,14 +973,21 @@ import { AuthService } from '../../services/auth.service';
                   type="datetime-local"
                   [(ngModel)]="formPromocion.fechaFinLocal"
                   name="promoFin"
-                  class="input-cupertino" />
+                  class="input-cupertino"
+                  [attr.aria-invalid]="errorDe('promo-fin') ? 'true' : null"
+                  [attr.aria-describedby]="errorDe('promo-fin') ? 'promo-fin-error' : null"
+                  (blur)="tocarCampo('promo-fin')" />
+                <small *ngIf="errorDe('promo-fin') as error" id="promo-fin-error" class="campo-error">
+                  <span aria-hidden="true" class="material-symbols-rounded">error</span>
+                  <span>{{ error }}</span>
+                </small>
                 <small class="campo-ayuda">Fin exclusivo</small>
               </div>
             </div>
 
             <div class="modal-acciones">
-              <button type="button" class="btn-cupertino btn-secundario" (click)="cerrarModales()">Cancelar</button>
-              <button type="submit" class="btn-cupertino btn-morado" [disabled]="guardando()">
+              <button type="button" class="btn-cupertino btn-secundario" (mousedown)="$event.preventDefault()" (click)="cerrarModales()">Cancelar</button>
+              <button type="submit" class="btn-cupertino btn-morado" (mousedown)="$event.preventDefault()" [disabled]="guardando()">
                 {{ guardando() ? 'Guardando...' : (modoEdicionPromocion() ? 'Actualizar' : 'Crear Promoción') }}
               </button>
             </div>
@@ -1097,6 +1328,24 @@ import { AuthService } from '../../services/auth.service';
       border-color: var(--token-naranja-primario);
       outline: 2px solid rgba(249, 115, 22, 0.2);
     }
+    .input-cupertino[aria-invalid="true"],
+    .input-cupertino[aria-invalid="true"]:focus {
+      border: 2px solid var(--color-error);
+    }
+    .campo-error {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--color-error);
+    }
+    .campo-error .material-symbols-rounded {
+      font-size: 16px;
+    }
+    .campo-error-fila {
+      margin-bottom: 8px;
+    }
     .input-hint {
       font-size: 0.75rem;
       color: var(--color-texto-secundario);
@@ -1255,6 +1504,37 @@ export class GestionComponent implements OnInit {
     motivo: ''
   };
 
+  // Errores por campo (QA-V-07): visibles al salir del campo o al intentar enviar
+  camposTocados = signal<ReadonlySet<string>>(new Set());
+  envioIntentado = signal<boolean>(false);
+
+  errorDe(campo: string): string {
+    if (!this.envioIntentado() && !this.camposTocados().has(campo)) return '';
+    return this.erroresDelModal().find((e) => e.campo === campo)?.mensaje ?? '';
+  }
+
+  tocarCampo(campo: string): void {
+    // El blur al desmontar un modal ya cerrado no cuenta
+    if (!this.algunModalAbierto()) return;
+    this.camposTocados.set(new Set(this.camposTocados()).add(campo));
+  }
+
+  private erroresDelModal(): ErrorCampo[] {
+    if (this.mostrarModalIngrediente()) return validarIngrediente(this.formIngrediente);
+    if (this.mostrarModalPlatillo()) return validarPlatillo(this.formPlatillo);
+    if (this.mostrarModalEntrada()) return validarEntrada(this.formEntrada);
+    if (this.mostrarModalAjuste()) return validarAjuste(this.formAjuste);
+    if (this.mostrarModalPromocion()) return validarPromocion(this.formPromocion);
+    return [];
+  }
+
+  /** Resumen arriba, mensajes junto a cada campo y foco en el primero inválido */
+  private rechazarEnvio(errores: ErrorCampo[]): void {
+    this.envioIntentado.set(true);
+    this.mostrarError(errores[0].mensaje);
+    setTimeout(() => document.getElementById(errores[0].campo)?.focus());
+  }
+
   algunModalAbierto(): boolean {
     return this.mostrarModalIngrediente() ||
            this.mostrarModalPlatillo() ||
@@ -1332,8 +1612,9 @@ export class GestionComponent implements OnInit {
   }
 
   guardarIngrediente(): void {
-    if (!this.formIngrediente.nombre.trim()) {
-      this.mostrarError('El nombre del insumo es obligatorio.');
+    const errores = validarIngrediente(this.formIngrediente);
+    if (errores.length) {
+      this.rechazarEnvio(errores);
       return;
     }
 
@@ -1414,26 +1695,21 @@ export class GestionComponent implements OnInit {
   removerFilaReceta(index: number): void {
     if (this.formPlatillo.receta.length > 1) {
       this.formPlatillo.receta.splice(index, 1);
+      // Las filas cambian de índice: se olvidan sus campos visitados
+      this.camposTocados.set(new Set([...this.camposTocados()].filter((c) => !c.startsWith('receta-'))));
     } else {
       this.mostrarError('La receta debe conservar al menos un insumo.');
     }
   }
 
   guardarPlatillo(): void {
-    if (!this.formPlatillo.nombre.trim()) {
-      this.mostrarError('El nombre del platillo es obligatorio.');
-      return;
-    }
-    if (!this.formPlatillo.precio || Number(this.formPlatillo.precio) <= 0) {
-      this.mostrarError('El precio debe ser un importe positivo mayor a cero.');
+    const errores = validarPlatillo(this.formPlatillo);
+    if (errores.length) {
+      this.rechazarEnvio(errores);
       return;
     }
 
     const recetaLimpia = this.formPlatillo.receta.filter((r) => r.ingredienteId > 0 && Number(r.cantidad) > 0);
-    if (recetaLimpia.length === 0) {
-      this.mostrarError('Debes agregar al menos un insumo con cantidad válida en la receta.');
-      return;
-    }
 
     this.guardando.set(true);
     if (this.modoEdicionPlatillo() && this.platilloSeleccionadoId()) {
@@ -1484,12 +1760,9 @@ export class GestionComponent implements OnInit {
   }
 
   guardarEntrada(): void {
-    if (!this.formEntrada.ingredienteId) {
-      this.mostrarError('Selecciona un insumo.');
-      return;
-    }
-    if (!this.formEntrada.cantidad || Number(this.formEntrada.cantidad) <= 0) {
-      this.mostrarError('La cantidad de entrada debe ser mayor a cero.');
+    const errores = validarEntrada(this.formEntrada);
+    if (errores.length) {
+      this.rechazarEnvio(errores);
       return;
     }
 
@@ -1522,16 +1795,9 @@ export class GestionComponent implements OnInit {
   }
 
   guardarAjuste(): void {
-    if (!this.formAjuste.ingredienteId) {
-      this.mostrarError('Selecciona un insumo.');
-      return;
-    }
-    if (!this.formAjuste.cantidad || Number(this.formAjuste.cantidad) === 0) {
-      this.mostrarError('La cantidad de ajuste no puede ser cero.');
-      return;
-    }
-    if (!this.formAjuste.motivo.trim()) {
-      this.mostrarError('El motivo justificado es obligatorio.');
+    const errores = validarAjuste(this.formAjuste);
+    if (errores.length) {
+      this.rechazarEnvio(errores);
       return;
     }
 
@@ -1602,12 +1868,9 @@ export class GestionComponent implements OnInit {
   }
 
   guardarPromocion(): void {
-    if (!this.formPromocion.nombre.trim()) {
-      this.mostrarError('El nombre de la promoción es obligatorio.');
-      return;
-    }
-    if (!this.formPromocion.platilloId || this.formPromocion.platilloId <= 0) {
-      this.mostrarError('Debes seleccionar un platillo participante.');
+    const errores = validarPromocion(this.formPromocion);
+    if (errores.length) {
+      this.rechazarEnvio(errores);
       return;
     }
 
@@ -1619,39 +1882,18 @@ export class GestionComponent implements OnInit {
     };
 
     if (this.formPromocion.tipo === 'PORCENTAJE') {
-      const p = Number(this.formPromocion.porcentaje);
-      if (isNaN(p) || p <= 0 || p > 100) {
-        this.mostrarError('El porcentaje debe ser un número entre 0.01 y 100.');
-        return;
-      }
       payload.porcentaje = this.formPromocion.porcentaje;
       payload.n = null;
       payload.m = null;
     } else {
-      const n = Number(this.formPromocion.n);
-      const m = Number(this.formPromocion.m);
-      if (!Number.isInteger(n) || !Number.isInteger(m) || m < 1 || n <= m) {
-        this.mostrarError('Para promociones NxM debe cumplirse que N y M sean enteros con N > M >= 1.');
-        return;
-      }
-      payload.n = n;
-      payload.m = m;
+      payload.n = Number(this.formPromocion.n);
+      payload.m = Number(this.formPromocion.m);
       payload.porcentaje = null;
     }
 
     if (this.formPromocion.duracion === 'TEMPORAL') {
-      if (!this.formPromocion.fechaInicioLocal || !this.formPromocion.fechaFinLocal) {
-        this.mostrarError('Las promociones temporales requieren fecha y hora de inicio y fin.');
-        return;
-      }
-      const ini = new Date(this.formPromocion.fechaInicioLocal);
-      const fin = new Date(this.formPromocion.fechaFinLocal);
-      if (isNaN(ini.getTime()) || isNaN(fin.getTime()) || ini.getTime() >= fin.getTime()) {
-        this.mostrarError('La fecha de inicio debe ser anterior a la fecha de fin.');
-        return;
-      }
-      payload.fechaInicio = ini.toISOString();
-      payload.fechaFin = fin.toISOString();
+      payload.fechaInicio = new Date(this.formPromocion.fechaInicioLocal).toISOString();
+      payload.fechaFin = new Date(this.formPromocion.fechaFinLocal).toISOString();
     } else {
       payload.fechaInicio = null;
       payload.fechaFin = null;
@@ -1727,6 +1969,8 @@ export class GestionComponent implements OnInit {
     this.mostrarModalEntrada.set(false);
     this.mostrarModalAjuste.set(false);
     this.mostrarModalPromocion.set(false);
+    this.camposTocados.set(new Set());
+    this.envioIntentado.set(false);
     this.mensajeError.set('');
     this.guardando.set(false);
   }

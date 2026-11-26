@@ -72,7 +72,7 @@ import { AuthService } from '../../services/auth.service';
           </div>
 
           <div class="aviso-details">
-            <h4>{{ aviso.nombre }}</h4>
+            <h3>{{ aviso.nombre }}</h3>
             <p *ngIf="aviso.activo === false" class="nota-inactivo">
               <span class="badge badge-inactivo">
                 <span aria-hidden="true" class="material-symbols-rounded">block</span>
@@ -183,7 +183,7 @@ import { AuthService } from '../../services/auth.service';
       flex: 1;
       min-width: 0;
     }
-    .aviso-details h4 {
+    .aviso-details h3 {
       font-size: 0.98rem;
       font-weight: 600;
       margin-bottom: 2px;
