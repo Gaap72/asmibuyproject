@@ -11,6 +11,8 @@
 **Revisor Principal:** Integrante 1 (Base Web y Acceso)  
 **Revisores Adicionales:** Integrante 4 (Consumo y Transacciones) e Integrante 3 (Cotización y Catálogo)
 
+**Actualización C9 (2026-11-25, en revisión):** se alinean `AvisoStockDTO`, la firma de consumo y los errores por ingrediente inactivo con el código.
+
 Este documento establece la especificación formal de esquemas, tipos DTO, contratos de API públicos y el protocolo de consumo transaccional proporcionados por el Integrante 2 para el uso de los Integrantes 1 (Plataforma), 3 (Promociones) y 4 (Ventas e Historial).
 
 ---
@@ -116,6 +118,7 @@ export interface AvisoStockDTO {
   existencia: string;
   minimo: string;
   estadoStock: EstadoStock;
+  activo: boolean; // false si el ingrediente está dado de baja (ver 3.2)
 }
 ```
 
@@ -189,13 +192,19 @@ export interface ItemConsumoDTO {
   cantidadPlatillos: number; // Cantidad total vendida (incluye entregadas + bonificadas por promoción)
 }
 
-export async function descontarInventarioPorVenta(
-  client: pg.PoolClient,
+// Método estático de InventarioService
+static async descontarInventarioPorVenta(
+  client: pg.PoolClient | null,
   ordenId: number,
   usuarioId: number,
   items: ItemConsumoDTO[]
 ): Promise<void>;
 ```
+
+* El argumento `client` se pasa siempre, pero admite `null`.
+* **Con PostgreSQL** (`DATABASE_URL`) el llamador **debe** entregar el cliente de su transacción; todas las lecturas, bloqueos y escrituras usan ese cliente.
+* **Con `null` no se usa el pool:** si `client` es `null` (o falta en tiempo de ejecución) se ejecuta la rama de memoria, que registra el consumo solo en memoria y **no** escribe en `movimientos_inventario`, aunque `DATABASE_URL` esté definida. `null` es exclusivo de las pruebas y del modo sin base de datos.
+* Ventas entrega el cliente en modo PostgreSQL y `null` en modo memoria.
 
 ### 4.2 Algoritmo y Garantías Transaccionales
 
@@ -213,8 +222,11 @@ export async function descontarInventarioPorVenta(
      ```
    * Al seguir estrictamente el orden jerárquico Platillos (FOR UPDATE ASC) -> Promociones (FOR SHARE OF pr ASC) -> Ingredientes (FOR UPDATE ASC), se previenen bloqueos cruzados y deadlocks 40P01 entre ventas concurrentes y entre ventas y ediciones de recetas.
 
-3. **Verificación de Insumos Activos y Recetas Válidas:**
-   * Si cualquier ingrediente requerido está inactivo (`activo = FALSE`), se lanza error `INGREDIENTE_INACTIVO`.
+3. **Verificación de Insumos Activos y Recetas Válidas** (se hace al leer las recetas, antes de bloquear ingredientes):
+   * Un platillo inactivo responde `PLATILLO_INACTIVO` (400).
+   * Un platillo sin ingredientes o **con algún ingrediente inactivo** en su receta responde `RECETA_INVALIDA` (400).
+   * `INGREDIENTE_INACTIVO` (400) queda en el consumo como comprobación defensiva: solo se lanza si, ya superada la verificación anterior, un ingrediente requerido no existe o aparece inactivo al comprobarlo tras el bloqueo. En entradas, ajustes y edición de recetas sí es la respuesta normal ante un ingrediente inactivo.
+   * En la confirmación de venta, Promociones revalida antes la cotización: si la validez de la receta cambió después de cotizar, la respuesta es `COTIZACION_DESACTUALIZADA` (409, contrato 03) y no se llega a este paso.
 
 4. **Verificación de Stock Disponible:**
    * Se calcula la existencia actual para cada ingrediente involucrado mediante:
@@ -256,7 +268,7 @@ export async function descontarInventarioPorVenta(
 |---|---|---|
 | `RECETA_INVALIDA` | 400 | El platillo no cuenta con ingredientes asignados o contiene ingredientes inactivos. |
 | `UNIDAD_INMUTABLE` | 400 | No es posible cambiar la unidad de un ingrediente con historial o recetas vinculadas. |
-| `INGREDIENTE_INACTIVO` | 400 | Intento de operar o vender con un ingrediente en estado inactivo. |
+| `INGREDIENTE_INACTIVO` | 400 | Entrada, ajuste o receta con un ingrediente inactivo. En la venta es solo una comprobación defensiva (ver 4.2, punto 3). |
 | `MINIMO_INVALIDO` | 400 | El valor especificado para el mínimo obligatorio es menor a cero. |
 | `STOCK_INSUFICIENTE` | 409 | La existencia actual es menor a la demanda agregada requerida por la venta. |
 

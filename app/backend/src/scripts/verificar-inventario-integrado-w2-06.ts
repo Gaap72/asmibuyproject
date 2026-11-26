@@ -1,6 +1,8 @@
 import Decimal from 'decimal.js';
 import { CatalogoService, ErrorCatalogo } from '../services/catalogo.service';
 import { InventarioService } from '../services/inventario.service';
+import { PromocionesService } from '../services/promociones.service';
+import { VentasService } from '../services/ventas.service';
 
 let pruebasPasadas = 0;
 let pruebasTotales = 0;
@@ -16,11 +18,28 @@ function afirmar(condicion: boolean, descripcion: string) {
   }
 }
 
+async function saldo(ingredienteId: number): Promise<Decimal> {
+  return new Decimal((await CatalogoService.obtenerIngredientePorId(ingredienteId))!.existencia);
+}
+
+/** Saldos de Pan, Carne, Queso y Papas, y huella de todo el kárdex */
+async function fotoInventario() {
+  const saldos = (await Promise.all([1, 2, 3, 4].map(saldo))).map((s) => s.toString()).join('|');
+  const kardex = (await InventarioService.listarMovimientos())
+    .map((m) => `${m.id}:${m.ingredienteId}:${m.cantidad}`).sort().join('|');
+  return { saldos, kardex };
+}
+
 async function ejecutarVerificacionIntegrada() {
+  // Esta batería crea promociones, ventas y anulaciones: solo en memoria
+  if (process.env.DATABASE_URL) {
+    throw new Error('Retire DATABASE_URL: la batería W2-06 solo se ejecuta en memoria.');
+  }
+
   console.log('====================================================================');
   console.log('🧪 BATERÍA DE INTEGRACIÓN FINAL - TAREA W2-06');
   console.log('   Módulo: Catálogo e Inventario (Integrante 2)');
-  console.log('   Alcance: Recetas compartidas, Promociones, Idempotencia y Mínimos');
+  console.log('   Alcance: Recetas compartidas, Promociones, Anulación y Mínimos');
   console.log('====================================================================\n');
 
   // -------------------------------------------------------------------------
@@ -94,58 +113,90 @@ async function ejecutarVerificacionIntegrada() {
   // -------------------------------------------------------------------------
   console.log('\n🎁 2. Consumo de unidades bonificadas/gratuitas por promoción:');
 
-  // Promoción 2x1: Cliente paga 1 pero se entregan 2 unidades
-  // La venta reporta cantidadPlatillos = 2 (entregadas)
-  const panAntes2x1 = new Decimal((await CatalogoService.obtenerIngredientePorId(1))!.existencia);
-  const carneAntes2x1 = new Decimal((await CatalogoService.obtenerIngredientePorId(2))!.existencia);
+  // Promoción 2x1 con el cálculo real: se cobra 1 y se entregan 2
+  const promo2x1 = await PromocionesService.crearPromocion(
+    { nombre: 'W2-06 2x1', platilloId: 1, tipo: 'NXM', n: 2, m: 1, duracion: 'PERMANENTE' }, 1
+  );
+  const linea2x1 = (await PromocionesService.cotizarOrden([{ platilloId: 1, cantidad: 2 }])).partidas[0];
+  afirmar(
+    linea2x1.cantidad === 2 && linea2x1.unidadesCobradas === 1 && linea2x1.unidadesBonificadas === 1,
+    'Cotización 2x1: 2 unidades entregadas, 1 cobrada y 1 bonificada'
+  );
 
+  const panAntes2x1 = await saldo(1);
+  const carneAntes2x1 = await saldo(2);
   await InventarioService.descontarInventarioPorVenta(null, 2002, 1, [
-    { platilloId: 1, cantidadPlatillos: 2 } // 2 unidades entregadas en 2x1
+    { platilloId: 1, cantidadPlatillos: linea2x1.cantidad }
   ]);
+  afirmar(panAntes2x1.minus(await saldo(1)).equals(2), 'Promoción 2x1 consumió insumos de las 2 unidades entregadas (2 panes)');
+  afirmar(carneAntes2x1.minus(await saldo(2)).equals(300), 'Promoción 2x1 consumió insumos de las 2 unidades entregadas (300 g carne)');
+  await PromocionesService.retirarPromocion(promo2x1.id, 1);
 
-  const panDespues2x1 = new Decimal((await CatalogoService.obtenerIngredientePorId(1))!.existencia);
-  const carneDespues2x1 = new Decimal((await CatalogoService.obtenerIngredientePorId(2))!.existencia);
+  // Promoción 3x1 con 4 unidades (CW-12) con el cálculo real: se cobran 2 y se entregan 4
+  const promo3x1 = await PromocionesService.crearPromocion(
+    { nombre: 'W2-06 3x1', platilloId: 1, tipo: 'NXM', n: 3, m: 1, duracion: 'PERMANENTE' }, 1
+  );
+  const linea3x1 = (await PromocionesService.cotizarOrden([{ platilloId: 1, cantidad: 4 }])).partidas[0];
+  afirmar(
+    linea3x1.cantidad === 4 && linea3x1.unidadesCobradas === 2 && linea3x1.unidadesBonificadas === 2,
+    'Cotización 3x1: 4 unidades entregadas, 2 cobradas y 2 bonificadas'
+  );
 
-  afirmar(panAntes2x1.minus(panDespues2x1).equals(2), 'Promoción 2x1 consumió insumos de las 2 unidades entregadas (2 panes)');
-  afirmar(carneAntes2x1.minus(carneDespues2x1).equals(300), 'Promoción 2x1 consumió insumos de las 2 unidades entregadas (300 g carne)');
-
-  // Promoción 3x1 con 4 unidades (CW-12): Se pagan 2, se entregan 4
-  const panAntes3x1 = new Decimal((await CatalogoService.obtenerIngredientePorId(1))!.existencia);
+  const panAntes3x1 = await saldo(1);
   await InventarioService.descontarInventarioPorVenta(null, 2003, 1, [
-    { platilloId: 1, cantidadPlatillos: 4 } // 4 entregadas
+    { platilloId: 1, cantidadPlatillos: linea3x1.cantidad }
   ]);
-  const panDespues3x1 = new Decimal((await CatalogoService.obtenerIngredientePorId(1))!.existencia);
-  afirmar(panAntes3x1.minus(panDespues3x1).equals(4), 'Promoción 3x1 con 4 unidades entregadas consumió 4 panes');
+  afirmar(panAntes3x1.minus(await saldo(1)).equals(4), 'Promoción 3x1 con 4 unidades entregadas consumió 4 panes');
+  await PromocionesService.retirarPromocion(promo3x1.id, 1);
 
   // -------------------------------------------------------------------------
   // 3. Anulación Total NO reintegra inventario automáticamente (CW-16)
   // -------------------------------------------------------------------------
   console.log('\n🚫 3. Anulación de venta y conservación de movimientos (CW-16):');
 
-  const stockPanAntesAnulacion = (await CatalogoService.obtenerIngredientePorId(1))!.existencia;
-  const movimientosAntesAnulacion = (await InventarioService.listarMovimientos(1)).length;
-
-  // Al anular una orden, la regla de spec.md v2.1 y AGENTS.md establece:
-  // "La anulación no modifica inventario: los ingredientes ya salieron al confirmar.
-  //  Si físicamente se recuperaron, administrador registra un ajuste positivo justificado."
-  // Simulamos el evento de anulación en Ventas:
-  const movimientosDespuesAnulacion = (await InventarioService.listarMovimientos(1)).length;
-  const stockPanDespuesAnulacion = (await CatalogoService.obtenerIngredientePorId(1))!.existencia;
-
+  const items = [
+    { platilloId: 1, cantidad: 2 },
+    { platilloId: platilloPapas.id, cantidad: 1 }
+  ];
+  const cotizacion = await PromocionesService.cotizarOrden(items);
+  const antesVenta = await Promise.all([1, 2, 3, 4].map(saldo));
+  const orden = await VentasService.confirmarVenta(
+    { claveIdempotencia: 'w2-06-anulacion', metodoPago: 'EFECTIVO', items, cotizacionAceptada: cotizacion }, 2
+  );
+  const trasVentaSaldos = await Promise.all([1, 2, 3, 4].map(saldo));
   afirmar(
-    stockPanAntesAnulacion === stockPanDespuesAnulacion,
+    antesVenta.map((s, i) => s.minus(trasVentaSaldos[i]).toString()).join('|') === '2|300|2|200',
+    'La venta que se va a anular consumió 2 panes, 300 g de carne, 2 quesos y 200 g de papas'
+  );
+  const trasVenta = await fotoInventario();
+
+  const motivo = 'Cliente canceló el pedido (W2-06)';
+  const anulada = await VentasService.anularVenta(orden.id, motivo, 1, 'ADMINISTRADOR');
+  afirmar(anulada.estado === 'ANULADA' && anulada.motivoAnulacion === motivo, 'La venta quedó ANULADA con su motivo');
+  const trasAnular = await fotoInventario();
+  afirmar(
+    trasAnular.saldos === trasVenta.saldos,
     'CRITERIO CW-16: La anulación no alteró automáticamente el inventario'
   );
   afirmar(
-    movimientosAntesAnulacion === movimientosDespuesAnulacion,
+    trasAnular.kardex === trasVenta.kardex,
     'CRITERIO CW-16: El kárdex se conserva intacto tras una anulación de venta'
+  );
+
+  const repetida = await VentasService.anularVenta(orden.id, 'Otro motivo posterior', 1, 'ADMINISTRADOR');
+  const trasRepetir = await fotoInventario();
+  afirmar(
+    repetida.estado === 'ANULADA' && repetida.motivoAnulacion === motivo &&
+    repetida.anuladoEn === anulada.anuladoEn && repetida.usuarioAnulacionId === anulada.usuarioAnulacionId &&
+    trasRepetir.saldos === trasVenta.saldos && trasRepetir.kardex === trasVenta.kardex,
+    'CRITERIO CW-16: Una segunda anulación no cambia la orden, el saldo ni el kárdex'
   );
 
   // Si administrador recupera físicamente mercancía, registra un ajuste justificado manual:
   const ajusteRecuperacion = await InventarioService.registrarAjuste({
     ingredienteId: 1,
     cantidad: 2,
-    motivo: 'Recuperación física justificada por anulación de orden #2002',
+    motivo: `Recuperación física justificada por anulación de orden ${orden.folio}`,
     usuarioId: 1
   });
   afirmar(ajusteRecuperacion.cantidad === '+2', 'Ajuste manual de recuperación física registrado');

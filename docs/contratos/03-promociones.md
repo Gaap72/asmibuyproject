@@ -7,6 +7,10 @@
 
 Este documento establece la especificación formal del modelo de datos, tipos TypeScript (DTOs), reglas matemáticas de cálculo exacto, contratos de API REST y protocolos de integración entre el módulo de Promociones y los módulos de Ventas (Integrante 4) y Catálogo e Inventario (Integrante 2), en estricto cumplimiento con `spec.md` v2.1 y las reglas de `AGENTS.md`.
 
+## Adenda C9 (2026-11-25, en revisión)
+
+Se documentan, según el código actual, `recetaHuella` (sección 2.1), la ruta `validar-cotizacion` (sección 4.1) y los errores `CANTIDAD_INVALIDA` y `PARAMETROS_INVALIDOS` (sección 5). No cambia el comportamiento.
+
 ## Adenda de integración — Auditoría 3 (19-10-2026, pendiente de revisión 2/4/1)
 
 - **Reloj de referencia unificado y sincronización NTP (A3-3-04):** En modo PostgreSQL (`DATABASE_URL`), tanto la cotización sin bloqueo (`PromocionesService.cotizarOrden`) como la revalidación transaccional al confirmar la venta (`PromocionesService.validarConsistenciaCotizacion` con `bloquearParaConfirmacion = true`) obtienen el instante de evaluación directamente del motor PostgreSQL mediante `SELECT clock_timestamp() AS ahora` bajo sesión configurada en `TimeZone=UTC`. La hora autoritativa al confirmar la venta es siempre la de la base de datos tomada inmediatamente después de adquirir los bloqueos deterministas (`FOR UPDATE` sobre platillos y `FOR SHARE OF pr` sobre promociones). Los servidores de aplicación (Node.js) y de base de datos (PostgreSQL/Supabase) operan sincronizados por **NTP** en UTC para evitar desfases en los límites exactos de inicio inclusivo y fin exclusivo (`CW-10`).
@@ -111,6 +115,7 @@ export interface CotizarVentaInput {
 }
 
 export interface PartidaCotizacionDTO {
+  recetaHuella?: string; // Siempre presente en la respuesta; obligatoria al revalidar y confirmar (ver 2.1)
   platilloId: number;
   nombrePlatillo: string;
   precioUnitario: string; // ej. "100.00"
@@ -143,6 +148,52 @@ export interface ResultadoCotizacionDTO {
   promocionAplicada: PromocionAplicadaSnapshotDTO | null;
   partidas: PartidaCotizacionDTO[];
   fechaEvaluacion: string; // ISO 8601 UTC de la evaluación
+}
+```
+
+### 2.1 Huella de receta (`recetaHuella`) en la cotización y en la confirmación
+
+* **Tipo:** `string`, una por partida. Contiene en JSON la validez de la receta y sus ingredientes `[ingredienteId, unidad, cantidad]` ordenados por `ingredienteId`.
+* **Origen:** la calcula el servidor y viene en cada elemento de `partidas` de la respuesta de `POST /api/v1/promociones/cotizar`. El cliente la trata como opaca: no la construye ni la modifica.
+* **Uso:** el cliente la devuelve sin cambios en `cotizacionAceptada.partidas[]` al confirmar (`POST /api/v1/ventas/confirmar`, cuerpo `{ claveIdempotencia, metodoPago, items, cotizacionAceptada }`) y en `validar-cotizacion`.
+* **Obligatoriedad:** el tipo TypeScript la declara opcional, pero si falta o no coincide con la huella actual la respuesta es `409 COTIZACION_DESACTUALIZADA`, con `detalles: { cotizacionPrevia, nuevaCotizacion }`.
+* Al repetir una confirmación con la clave de una orden ya creada no se revalida la cotización: se devuelve esa orden si coinciden usuario, método, total y partidas.
+
+Ejemplo de respuesta de `POST /api/v1/promociones/cotizar` para `{ "items": [{ "platilloId": 1, "cantidad": 2 }] }` (salida del servicio en modo memoria):
+
+```json
+{
+  "subtotalBruto": "240.00",
+  "descuentoTotal": "36.00",
+  "total": "204.00",
+  "promocionAplicada": {
+    "id": 1,
+    "nombre": "Hamburguesa 15%",
+    "tipo": "PORCENTAJE",
+    "porcentaje": "15.00",
+    "n": null,
+    "m": null,
+    "duracion": "PERMANENTE",
+    "fechaInicio": null,
+    "fechaFin": null,
+    "ahorroTotal": "36.00"
+  },
+  "partidas": [
+    {
+      "recetaHuella": "{\"valida\":true,\"ingredientes\":[[1,\"pieza\",\"1\"],[2,\"g\",\"150\"],[3,\"pieza\",\"1\"]]}",
+      "platilloId": 1,
+      "nombrePlatillo": "Hamburguesa Clásica",
+      "precioUnitario": "120.00",
+      "cantidad": 2,
+      "subtotalBruto": "240.00",
+      "descuento": "36.00",
+      "subtotalNeto": "204.00",
+      "unidadesCobradas": 2,
+      "unidadesBonificadas": 0,
+      "promocionAplicadaId": 1
+    }
+  ],
+  "fechaEvaluacion": "2026-11-26T03:12:11.356Z"
 }
 ```
 
@@ -224,6 +275,27 @@ Al confirmar una orden:
 | `PATCH` | `/api/v1/promociones/:id/estado`| `ADMINISTRADOR`| Cambia estado a ACTIVA o INACTIVA |
 | `DELETE`| `/api/v1/promociones/:id` | `ADMINISTRADOR` | Marca la promoción como RETIRADA (baja lógica inmutable) |
 | `POST` | `/api/v1/promociones/cotizar` | Autenticado | Evalúa el carrito y calcula subtotal, mejor promoción, ahorro y total |
+| `POST` | `/api/v1/promociones/validar-cotizacion` | Autenticado | Revalida una cotización previa sin crear ninguna venta (ver 4.1) |
+
+### 4.1 `POST /api/v1/promociones/validar-cotizacion`
+
+* **Acceso:** sesión de `ADMINISTRADOR` o `TRABAJADOR` y, como toda escritura, cabecera `X-CSRF-Token`.
+* **Entrada:** el cuerpo es directamente un `ResultadoCotizacionDTO` (la cotización previa completa, con `recetaHuella` en cada partida). Los artículos a reevaluar salen de `partidas[].platilloId` y `partidas[].cantidad`.
+* **Salida (200):** `{ "valida": true, "cotizacion": ResultadoCotizacionDTO }`.
+* **Alcance:** consulta sin transacción ni bloqueos; la confirmación de venta vuelve a revalidar dentro de su transacción.
+
+| Código | HTTP | Cuándo |
+|---|---|---|
+| `DATOS_INVALIDOS` | 400 | El cuerpo no tiene un arreglo `partidas` |
+| `ORDEN_VACIA` | 400 | `partidas` está vacío |
+| `PARAMETROS_INVALIDOS` | 400 | Un `platilloId` no es un entero positivo |
+| `CANTIDAD_INVALIDA` | 400 | Una `cantidad` no es un entero positivo |
+| `PLATILLO_NO_ENCONTRADO` | 404 | El platillo no existe |
+| `PLATILLO_INACTIVO` | 400 | El platillo está inactivo |
+| `COTIZACION_DESACTUALIZADA` | 409 | Cambió la promoción, una partida, la huella de receta o un total; `detalles: { cotizacionPrevia, nuevaCotizacion }` |
+| `NO_AUTENTICADO` | 401 | Sin sesión válida |
+| `CSRF_INVALIDO` / `ORIGEN_NO_PERMITIDO` | 403 | Falla la protección CSRF u origen |
+| `ERROR_INTERNO` | 500 | Error inesperado |
 
 ---
 
@@ -246,4 +318,6 @@ Al confirmar una orden:
 * `DURACION_INVALIDA` (400): La duración debe ser `TEMPORAL` o `PERMANENTE`.
 * `PROMOCION_RETIRADA` (409): No se puede editar ni reactivar una promoción en estado `RETIRADA`.
 * `ORDEN_VACIA` (400): La cotización requiere al menos un platillo con cantidad positiva.
+* `PARAMETROS_INVALIDOS` (400): El ID de un platillo de la cotización no es un entero positivo.
+* `CANTIDAD_INVALIDA` (400): La cantidad de un platillo de la cotización no es un entero positivo.
 * `COTIZACION_DESACTUALIZADA` (409): Los precios o promociones cambiaron; se requiere revalidación.
