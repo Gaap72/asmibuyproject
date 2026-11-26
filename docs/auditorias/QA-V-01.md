@@ -37,10 +37,10 @@ Nota: `verificar-auditoria3-w2` da 15/17 si se ejecuta desde `app/backend`, porq
 Pendiente para el revisor: desactivar un insumo sin platillos activos, abrir Avisos y comprobar la etiqueta «Inactivo» a 360 px y en escritorio, sin desbordamiento horizontal.
 
 ## Decisión del revisor
-Revisor:
-Fecha:
-Decisión:
-Observaciones:
+Revisor: Pech Ake Santiago Asahel (integrante 1)
+Fecha: 2026-11-25
+Decisión: aprobado
+Observaciones: Revisión principal. Reproducido por el revisor en `565aa23` (main con el PR #8 fusionado), sin base de datos: build de backend sin errores; `verificar-minimos-avisos-w2-05` 23/23, `verificar-auditoria1-w2` 26/0, `verificar-auditoria2-w2` 14/14, `verificar-auditoria3-w2` 17/17 (desde la raíz) y `verificar-entrega-qa-v` 20/20; `git diff --check 2fe9478 4fec839` limpio. Prueba en navegador (la que faltaba): Microsoft Edge 158.0.4370.33, Windows 11, base local PostgreSQL 18.4. Se desactivó el insumo «2enbwuojhdbw» (sin platillos activos) desde Gestión; Gestión lo marca «INACTIVO». Avisos lo muestra con la etiqueta «Inactivo» (ícono y texto) y «Dado de baja: no se usa en recetas ni ventas.», conservando una fila por ingrediente; Carne, Pan y Queso sin cambios. Comprobado en escritorio y a 360 × 640 (modo dispositivo), sin desplazamiento horizontal ni errores en consola. Capturas fuera del repositorio, en la carpeta de QA local del revisor.
 
 ## Cierre
 
