@@ -495,7 +495,8 @@ classDiagram
     GET /promociones y /promociones/:id
     POST /promociones/cotizar
     POST /promociones/validar-cotizacion
-    POST|PUT /promociones
+    POST /promociones
+    PUT /promociones/:id
     PATCH /promociones/:id/estado
     DELETE /promociones/:id  «retirar»
   }
@@ -819,7 +820,7 @@ Surgieron al construir los diagramas. No son hallazgos de auditoría; se entrega
 | D0 | Integrante 1 (coordinación de `app/` y `compartido/`) | Pendiente |
 | D1.1, D1.2 | Integrante 1 | Pendiente |
 | D2.1, D2.2 | Integrante 2 | Pendiente |
-| D3.1, D3.2 | Integrante 3 | Pendiente |
-| D4.1, D4.2 | Integrante 3 (revisor del 4) | Pendiente |
+| D3.1, D3.2 | Integrante 3 | Aprobado (Gaap72, 2026-11-25) |
+| D4.1, D4.2 | Integrante 3 (revisor del 4) | Aprobado (Gaap72, 2026-11-25) |
 
 Si el código cambia, el autor del cambio actualiza el diagrama de su módulo en el mismo commit.

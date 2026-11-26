@@ -406,7 +406,7 @@ No se modelan porque spec.md 2.1 los excluye: registro público, editor de roles
 | --- | --- | --- | --- |
 | 1 Plataforma y accesos | CU-01 a CU-06 | Integrante 1 | Pendiente |
 | 2 Catálogo e inventario | CU-07 a CU-12 | Integrante 2 | Pendiente |
-| 3 Promociones | CU-13 a CU-16 | Integrante 3 | Pendiente |
-| 4 Punto de venta | CU-17 a CU-22 | Integrante 3 (revisor del 4) | Pendiente |
+| 3 Promociones | CU-13 a CU-16 | Integrante 3 | Aprobado (Gaap72, 2026-11-25) |
+| 4 Punto de venta | CU-17 a CU-22 | Integrante 3 (revisor del 4) | Aprobado (Gaap72, 2026-11-25) |
 
 Cada integrante confirma que sus casos describen el comportamiento acordado y avisa si el código difiere. Una diferencia se corrige en el código o en este documento mediante el flujo habitual.
