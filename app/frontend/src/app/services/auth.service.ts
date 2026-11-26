@@ -1,7 +1,11 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, of, map } from 'rxjs';
+import { Observable, tap, catchError, of, map, timeout } from 'rxjs';
 import { Router } from '@angular/router';
+import { compararIdentidad, ResultadoIdentidad } from './identidad-sesion.util';
+
+const CLAVE_AVISO_CAMBIO = 'asmibuy_aviso_cambio_cuenta';
+const AVISO_CAMBIO = 'La sesión cambió a otra cuenta en otra pestaña. Se recargó para evitar operar con la cuenta equivocada.';
 
 export interface UsuarioDTO {
   id: number;
@@ -37,6 +41,66 @@ export class AuthService {
       }
     }
     this.verificarSesionInicial();
+    this.vigilarIdentidad();
+  }
+
+  private ultimaRevisionIdentidad = 0;
+
+  /** Al volver a la pestaña se comprueba que la sesión siga siendo de la misma cuenta (QA-V-08) */
+  private vigilarIdentidad(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const revisar = () => {
+      if (document.visibilityState !== 'visible' || !this.usuarioActual()) return;
+      const ahora = Date.now();
+      if (ahora - this.ultimaRevisionIdentidad < 3000) return;
+      this.ultimaRevisionIdentidad = ahora;
+      this.comprobarIdentidad().subscribe((resultado) => this.manejarCambioDeIdentidad(resultado));
+    };
+    document.addEventListener('visibilitychange', revisar);
+    window.addEventListener('focus', revisar);
+  }
+
+  /**
+   * Pregunta al servidor qué cuenta autentica la cookie. Un fallo de red o del servidor no
+   * cuenta como cambio: la operación sigue su camino normal.
+   */
+  comprobarIdentidad(): Observable<ResultadoIdentidad> {
+    return this.http.get<{ usuario?: UsuarioDTO }>(`${this.baseUrl}/me`, { withCredentials: true }).pipe(
+      timeout(5000),
+      map((res) => res?.usuario?.id ?? null),
+      // 401: no hay sesión. Cualquier otro fallo de la petición deja el id sin conocer
+      catchError((err) => of(err?.status === 401 ? null : undefined)),
+      map((idServidor) => idServidor === undefined
+        ? 'igual'
+        : compararIdentidad(this.usuarioActual()?.id ?? null, idServidor))
+    );
+  }
+
+  /** No toca localStorage: la venta pendiente de cada cuenta se conserva */
+  manejarCambioDeIdentidad(resultado: ResultadoIdentidad): void {
+    if (resultado === 'cambio') {
+      try {
+        sessionStorage.setItem(CLAVE_AVISO_CAMBIO, AVISO_CAMBIO);
+      } catch {
+        // Sin almacenamiento se recarga igual, sin aviso
+      }
+      window.location.reload();
+    } else if (resultado === 'sin-sesion' && !this.router.url.startsWith('/login')) {
+      const volver = this.rutaInternaSegura(this.router.url);
+      this.limpiarSesionLocal();
+      this.router.navigate(['/login'], { queryParams: { volver, motivo: 'sesion-expirada' } });
+    }
+  }
+
+  /** Devuelve el aviso de cambio de cuenta una sola vez */
+  consumirAvisoCambioCuenta(): string {
+    try {
+      const aviso = sessionStorage.getItem(CLAVE_AVISO_CAMBIO) ?? '';
+      sessionStorage.removeItem(CLAVE_AVISO_CAMBIO);
+      return aviso;
+    } catch {
+      return '';
+    }
   }
 
   /**

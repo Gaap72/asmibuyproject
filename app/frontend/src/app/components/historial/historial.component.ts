@@ -784,6 +784,7 @@ export class HistorialComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarHistorial();
+    this.mensajeError.set(this.authService.consumirAvisoCambioCuenta()); // QA-V-08
   }
 
   cargarHistorial(): void {
@@ -840,9 +841,21 @@ export class HistorialComponent implements OnInit {
     const orden = this.ordenAAnular();
     const motivo = this.motivoAnulacion.trim();
 
-    if (!orden || !motivo) return;
+    if (!orden || !motivo || this.anulando()) return;
 
+    // QA-V-08: bloquear antes de comprobar y no anular si la cuenta cambió en otra pestaña
     this.anulando.set(true);
+    this.authService.comprobarIdentidad().subscribe((identidad) => {
+      if (identidad !== 'igual') {
+        this.anulando.set(false);
+        this.authService.manejarCambioDeIdentidad(identidad);
+        return;
+      }
+      this.enviarAnulacion(orden, motivo);
+    });
+  }
+
+  private enviarAnulacion(orden: OrdenDTO, motivo: string): void {
     this.ventasService.anularVenta(orden.id, motivo).subscribe({
       next: (ordenActualizada) => {
         this.anulando.set(false);

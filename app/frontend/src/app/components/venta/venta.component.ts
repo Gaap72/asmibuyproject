@@ -1200,6 +1200,8 @@ export class VentaComponent implements OnInit {
   ngOnInit(): void {
     this.cargarCatalogo();
     this.revisarVentaPendienteLocal();
+    const aviso = this.authService.consumirAvisoCambioCuenta(); // QA-V-08
+    if (aviso) this.mensajeAlerta.set([aviso, this.mensajeAlerta()].filter(Boolean).join(' '));
   }
 
   /**
@@ -1370,8 +1372,20 @@ export class VentaComponent implements OnInit {
       cotizacionAceptada: cot
     };
 
-    if (!this.guardarVentaPendienteLocal(input)) return;
-    this.enviarConfirmacion(input, true);
+    // QA-V-08: bloquear antes de comprobar (doble clic) y no guardar ni enviar si la cuenta cambió
+    this.confirmando.set(true);
+    this.authService.comprobarIdentidad().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((identidad) => {
+      if (identidad !== 'igual') {
+        this.confirmando.set(false);
+        this.authService.manejarCambioDeIdentidad(identidad);
+        return;
+      }
+      if (!this.guardarVentaPendienteLocal(input)) {
+        this.confirmando.set(false);
+        return;
+      }
+      this.enviarConfirmacion(input, true);
+    });
   }
 
   private enviarConfirmacion(input: ConfirmarVentaInput, primerEnvio = false): void {
@@ -1575,7 +1589,17 @@ export class VentaComponent implements OnInit {
   reintentarVentaPendiente(): void {
     if (this.confirmando() || this.recuperando() || !this.solicitudPendiente) return;
     if (this.authService.usuarioActual()?.id !== this.usuarioPendienteId) return;
-    this.enviarConfirmacion(this.solicitudPendiente);
+    // QA-V-08: no reenviar con la sesión de otra cuenta; la pendiente se conserva
+    const solicitud = this.solicitudPendiente;
+    this.confirmando.set(true);
+    this.authService.comprobarIdentidad().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((identidad) => {
+      if (identidad !== 'igual') {
+        this.confirmando.set(false);
+        this.authService.manejarCambioDeIdentidad(identidad);
+        return;
+      }
+      this.enviarConfirmacion(solicitud);
+    });
   }
 
   puedeReintentarPendiente(): boolean {
