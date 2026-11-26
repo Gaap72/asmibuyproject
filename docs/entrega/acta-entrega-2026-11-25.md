@@ -7,7 +7,7 @@ Etiquetas usadas: **reportado por el ejecutor** (texto de la evidencia, sin repe
 ## a) Versión
 - SHA de `main` en que se basa esta actualización: `934444f7511a07589df638bd925b38664dd4fe24`.
 - Última verificación sobre clon limpio: `90a913185be5bc4f5b6962e6a1184404db5f06e3`. **No se ha repetido sobre el SHA actual.**
-- URL del despliegue: **pendiente (P1-B1)**; `W1-06.md` no registra ninguna.
+- URL del despliegue (reportado por el ejecutor, integrante 3, 2026-11-25; detalle en `W1-06.md`): web https://asmibuyproject-1.onrender.com y API https://asmibuyproject.onrender.com, las dos con `934444f`. Health OPERATIVO con Supabase. **Falta validar TLS** (`DB_SSL_CA`), además de cookies, login y CSRF (A6 a A8), migración 007 y restauración (P1-B1 y P1-B2).
 
 ## b) Alcance entregado
 Spec 2.1 con los cuatro módulos (plataforma y accesos, catálogo e inventario, promociones, ventas e historial), con perfiles fijos ADMINISTRADOR y TRABAJADOR. Web móvil adaptable (Angular + Express + PostgreSQL con `pg`). Límites: Supabase Free como base objetivo, sin aplicaciones nativas, sin editor de roles ni notificaciones externas; Avisos es una vista del stock actual.
