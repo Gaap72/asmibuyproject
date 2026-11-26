@@ -45,3 +45,6 @@ Observaciones: Revisión principal. Reproducido por el revisor en `565aa23` (mai
 ## Cierre
 
 Queda en revisión hasta la prueba en navegador y la decisión del integrante 1.
+
+## Decisión del revisor (integrante 4)
+Revisor: Matos May Oscar Michel (integrante 4) · Fecha: 2026-11-25 · Decisión: aprobado con observaciones · Observaciones: como revisor adicional de consumo; cambio aditivo (campo activo) con un solo consumidor y código coincidente. Mi aprobación del PR #8 en GitHub no fue la revisión principal: esa es la del integrante 1 en este archivo. Falta una prueba automática del campo activo, y la tabla aún dice «No verificado en navegador».

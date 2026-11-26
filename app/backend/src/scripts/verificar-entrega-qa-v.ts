@@ -76,6 +76,7 @@ function cargar(...partes: string[]): any {
   return modulo.exports;
 }
 
+cargar('app', 'services', 'identidad-sesion.util.ts'); // QA-V-08: dependencia de auth.service
 const { AuthService } = cargar('app', 'services', 'auth.service.ts');
 const { PromocionesApiService } = cargar('app', 'services', 'promociones.service.ts');
 const { VentasApiService } = cargar('app', 'services', 'ventas.service.ts');
